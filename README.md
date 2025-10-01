@@ -1,16 +1,13 @@
 # Ausmo - Complete AAC Communication App
 
-[![GitHub](https://img.shields.io/github/license/GM-Sage/ausmo)](https://github.com/GM-Sage/ausmo/blob/main/LICENSE)
-[![GitHub issues](https://img.shields.io/github/issues/GM-Sage/ausmo)](https://github.com/GM-Sage/ausmo/issues)
-[![GitHub stars](https://img.shields.io/github/stars/GM-Sage/ausmo)](https://github.com/GM-Sage/ausmo/stargazers)
+A comprehensive cross-platform mobile application (React Native with Expo) providing a complete Augmentative and Alternative Communication (AAC) solution for children with autism and other communication needs.
 
-A comprehensive cross-platform mobile application (React Native with Expo) that replicates and **exceeds** all functionality of GoTalk NOW for children with autism and communication needs.
-
-## 🚀 **Advanced Features (GoTalk NOW Compatible)**
+## 🚀 Features
 
 ### Core Communication Features
+
 - **Standard Pages**: Grid layouts with 1, 2, 4, 9, 16, 25, or 36 message locations
-- **Express Pages**: Advanced sentence building with GoTalk NOW features:
+- **Express Pages**: Advanced sentence building with features like:
   - Right-to-left accumulation for international languages
   - Combine TTS items (sentences vs. separate words)
   - Word fragments support
@@ -20,21 +17,24 @@ A comprehensive cross-platform mobile application (React Native with Expo) that 
 - **Visual Scene Pages**: Custom background images with invisible hotspots
 - **Keyboard Pages**: Full QWERTY keyboard with word prediction
 
-### 🎯 **Synced Button Library** (NEW!)
+### 🎯 Synced Button Library (NEW!)
+
 - **Reusable Buttons**: Create buttons once, use everywhere
 - **Auto-Sync**: Changes update across all instances instantly
 - **Categorization**: Organize by communication categories
 - **Usage Tracking**: Monitor button usage and popularity
 - **Import/Export**: Share button libraries between users
 
-### 🎓 **Educational Features** (NEW!)
+### 🎓 Educational Features (NEW!)
+
 - **Quiz Support**: Create educational assessments
 - **Multiple Choice**: Generate quiz questions automatically
 - **Scoring System**: Track correct/incorrect answers
 - **Quiz History**: View past performance and progress
 - **Export Results**: Share quiz results with educators
 
-### 📤 **Advanced Template Sharing** (NEW!)
+### 📤 Advanced Template Sharing (NEW!)
+
 - **Multiple Sharing Methods**:
   - Email sharing with attachments
   - AirDrop support (iOS)
@@ -45,7 +45,8 @@ A comprehensive cross-platform mobile application (React Native with Expo) that 
 - **Rating System**: Rate and review shared templates
 - **Premium Templates**: Free and paid template options
 
-### 🔊 **Enhanced Audio System**
+### 🔊 Enhanced Audio System
+
 - Text-to-Speech with multiple voice options
 - Audio recording up to 30 seconds
 - Volume and speed controls
@@ -56,7 +57,8 @@ A comprehensive cross-platform mobile application (React Native with Expo) that 
   - Auto-repeat functionality
   - Audio feedback options
 
-### ♿ **Comprehensive Accessibility Features**
+### ♿ Comprehensive Accessibility Features
+
 - Switch scanning (single and dual switch support)
 - High contrast mode
 - Large text options
@@ -69,7 +71,8 @@ A comprehensive cross-platform mobile application (React Native with Expo) that 
   - Voice control integration
   - Assistive touch support
 
-### 👥 **Advanced User Management**
+### 👥 Advanced User Management
+
 - Multiple user profiles
 - Individual settings per user
 - Usage analytics and reporting
@@ -80,7 +83,8 @@ A comprehensive cross-platform mobile application (React Native with Expo) that 
   - Selective data restoration
   - Cross-device synchronization
 
-### 📚 **Enhanced Content Management**
+### 📚 Enhanced Content Management
+
 - Built-in symbol library (2000+ symbols)
 - Custom photo integration
 - **Advanced Import/Export**:
@@ -88,39 +92,26 @@ A comprehensive cross-platform mobile application (React Native with Expo) that 
   - Batch operations
   - Template sharing
   - Synced button libraries
-- **Template Gallery**: Community-driven template sharing
+- Template Gallery: Community-driven template sharing
 
-## 🎯 **GoTalk NOW Feature Compatibility**
+## 🚀 Key Strengths
 
-### ✅ **Fully Implemented GoTalk NOW Features**
-- **Synced Buttons**: Reusable button library with auto-sync
-- **Express Page Advanced Settings**: All GoTalk NOW express features
-- **Template Sharing**: Email, AirDrop, WiFi, PDF export
-- **Quiz Support**: Educational assessment functionality
-- **Advanced Settings**: All experimental features
-- **PDF Export**: Communication book to PDF conversion
-- **Cloud Backup**: Multiple provider support
-- **Switchamajig Support**: Open-source switch control
-- **Tactile Talk Support**: Physical object integration
-- **Eight Quick Buttons**: Expanded quick button support
-
-### 🚀 **Beyond GoTalk NOW**
 - **Modern Cross-Platform**: Works on iOS, Android, and Web
 - **Real-Time Sync**: Cloud synchronization across devices
 - **Advanced Analytics**: Detailed usage tracking and reporting
 - **Modern UI/UX**: Intuitive, accessible interface design
 - **Developer-Friendly**: Open source with comprehensive documentation
 
-## 🆕 **Latest Updates (GoTalk NOW Features Added)**
+## 🆕 Latest Updates
 
-### **Synced Button Library**
+### Synced Button Library
 - Complete reusable button system
 - Auto-sync across all pages
 - Categorization and tagging
 - Usage analytics
 - Import/export functionality
 
-### **Enhanced Express Pages**
+### Enhanced Express Pages
 - Right-to-left accumulation
 - Combine TTS items setting
 - Word fragments support
@@ -128,7 +119,7 @@ A comprehensive cross-platform mobile application (React Native with Expo) that 
 - Express bar positioning
 - Scan express bar integration
 
-### **Advanced Template Sharing**
+### Advanced Template Sharing
 - Email sharing with attachments
 - AirDrop support (iOS)
 - WiFi network broadcast
@@ -136,21 +127,21 @@ A comprehensive cross-platform mobile application (React Native with Expo) that 
 - PDF export functionality
 - Community template gallery
 
-### **Educational Quiz System**
+### Educational Quiz System
 - Multiple choice questions
 - Automatic scoring
 - Quiz history tracking
 - Results export
 - Integration with button actions
 
-### **Advanced Backup & Export**
+### Advanced Backup & Export
 - PDF export of communication books
 - Multiple cloud provider support
 - Data compression
 - Enhanced export formats
 - Cross-device synchronization
 
-### **Experimental Features**
+### Experimental Features
 - Switchamajig support
 - Tactile Talk integration
 - Eight quick buttons
@@ -171,6 +162,7 @@ A comprehensive cross-platform mobile application (React Native with Expo) that 
 ## Getting Started
 
 ### Prerequisites
+
 - Node.js 20.19.4+
 - npm or yarn
 - Expo CLI
@@ -179,28 +171,28 @@ A comprehensive cross-platform mobile application (React Native with Expo) that 
 
 ### Installation
 
-1. Clone the repository:
-```bash
-git clone https://github.com/GM-Sage/ausmo.git
-cd ausmo
-```
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/GM-Sage/ausmo.git
+   cd ausmo
+   ```
 
-2. Install dependencies:
-```bash
-npm install
-```
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
 
-3. Start the development server:
-```bash
-npm start
-```
+3. **Start the development server:**
+   ```bash
+   npm start
+   ```
 
-4. Run on your preferred platform:
-```bash
-npm run ios     # iOS
-npm run android # Android
-npm run web     # Web
-```
+4. **Run on your preferred platform:**
+   ```bash
+   npm run ios     # iOS
+   npm run android # Android
+   npm run web     # Web
+   ```
 
 ## Project Structure
 
@@ -223,29 +215,30 @@ src/
 ├── utils/             # Utility functions
 └── assets/            # Static assets
 ```
-
 ## Development
 
 ### Code Style
+
 - ESLint for code linting
 - Prettier for code formatting
 - TypeScript for type safety
 
 ### Testing
+
 - Jest for unit testing
 - React Native Testing Library for component testing
 
 ### Building for Production
 
-1. Configure EAS Build:
-```bash
-npx eas build:configure
-```
+1. **Configure EAS Build:**
+   ```bash
+   npx eas build:configure
+   ```
 
-2. Build for production:
-```bash
-npx eas build --platform all
-```
+2. **Build for production:**
+   ```bash
+   npx eas build --platform all
+   ```
 
 ## Contributing
 
@@ -268,21 +261,21 @@ We welcome contributions to Ausmo! Here's how you can help:
 
 ## Issues and Support
 
-- Report bugs or request features on [GitHub Issues](https://github.com/GM-Sage/ausmo/issues)
+- Report bugs or request features on GitHub Issues
 - For questions and support, please contact support@ausmo.app
 
 ## Acknowledgments
 
-- Inspired by GoTalk NOW
-- Built for the autism and communication needs community
-- Designed with accessibility in mind
+This project was born from a deep understanding of the challenges faced by individuals with autism and their families. Having witnessed firsthand the transformative power of effective communication tools, we set out to create something that would truly make a difference in people's lives.
+
+Every feature has been carefully designed with accessibility at its core, ensuring that Ausmo works for everyone, regardless of their abilities or challenges. We believe that communication is a fundamental human right, and technology should be a bridge, not a barrier.
+
+We're grateful to the countless families, therapists, educators, and individuals who have shared their experiences and helped shape this project. Your feedback and stories continue to inspire us to push the boundaries of what's possible in assistive technology.
 
 ---
 
 <div align="center">
 
-**Made with ❤️ for the autism and communication needs community**
-
-[⭐ Star us on GitHub](https://github.com/GM-Sage/ausmo) | [🐛 Report Issues](https://github.com/GM-Sage/ausmo/issues) | [📧 Contact Support](mailto:support@ausmo.app)
+⭐ Star us on GitHub | 🐛 Report Issues | 📧 Contact Support
 
 </div>
