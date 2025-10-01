@@ -3,35 +3,47 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { Message, ApiResponse } from '../../types';
 
+// Declare FormData for React Native compatibility
+declare global {
+  interface FormData {
+    append(name: string, value: string | Blob, fileName?: string): void;
+  }
+}
+
 export const audioApi = createApi({
   reducerPath: 'audioApi',
   baseQuery: fetchBaseQuery({
     baseUrl: '/api/audio',
-    prepareHeaders: (headers) => {
+    prepareHeaders: headers => {
       headers.set('Content-Type', 'application/json');
       return headers;
     },
   }),
   tagTypes: ['Audio', 'Message'],
-  endpoints: (builder) => ({
+  endpoints: builder => ({
     // Audio Recording
     uploadAudio: builder.mutation<string, FormData>({
-      query: (formData) => ({
+      query: formData => ({
         url: 'upload',
         method: 'POST',
         body: formData,
       }),
       invalidatesTags: ['Audio'],
     }),
-    
+
     // Audio Playback
     getAudioUrl: builder.query<string, string>({
-      query: (audioId) => `play/${audioId}`,
-      providesTags: (result, error, audioId) => [{ type: 'Audio', id: audioId }],
+      query: audioId => `play/${audioId}`,
+      providesTags: (result, error, audioId) => [
+        { type: 'Audio', id: audioId },
+      ],
     }),
-    
+
     // Text-to-Speech
-    generateTTS: builder.mutation<string, { text: string; voice?: string; speed?: number; pitch?: number }>({
+    generateTTS: builder.mutation<
+      string,
+      { text: string; voice?: string; speed?: number; pitch?: number }
+    >({
       query: ({ text, voice, speed, pitch }) => ({
         url: 'tts',
         method: 'POST',
@@ -39,68 +51,98 @@ export const audioApi = createApi({
       }),
       invalidatesTags: ['Audio'],
     }),
-    
+
     // Audio Processing
-    processAudio: builder.mutation<string, { audioId: string; operation: 'noise-reduction' | 'normalize' | 'compress' }>({
+    processAudio: builder.mutation<
+      string,
+      {
+        audioId: string;
+        operation: 'noise-reduction' | 'normalize' | 'compress';
+      }
+    >({
       query: ({ audioId, operation }) => ({
         url: `process/${audioId}`,
         method: 'POST',
         body: { operation },
       }),
-      invalidatesTags: (result, error, { audioId }) => [{ type: 'Audio', id: audioId }],
+      invalidatesTags: (result, error, { audioId }) => [
+        { type: 'Audio', id: audioId },
+      ],
     }),
-    
+
     // Audio Messages
-    createAudioMessage: builder.mutation<Message, { text: string; audioFile?: string; userId: string }>({
-      query: (message) => ({
+    createAudioMessage: builder.mutation<
+      Message,
+      { text: string; audioFile?: string; userId: string }
+    >({
+      query: message => ({
         url: 'messages',
         method: 'POST',
         body: message,
       }),
       invalidatesTags: ['Message'],
     }),
-    
+
     // Voice Settings
-    getAvailableVoices: builder.query<Array<{ id: string; name: string; language: string; gender: string }>, void>({
+    getAvailableVoices: builder.query<
+      Array<{ id: string; name: string; language: string; gender: string }>,
+      void
+    >({
       query: () => 'voices',
       providesTags: ['Audio'],
     }),
-    
+
     // Audio Analytics
-    getAudioUsage: builder.query<Array<{ messageId: string; playCount: number; lastPlayed: string }>, string>({
-      query: (userId) => `${userId}/usage`,
+    getAudioUsage: builder.query<
+      Array<{ messageId: string; playCount: number; lastPlayed: string }>,
+      string
+    >({
+      query: userId => `${userId}/usage`,
       providesTags: ['Audio'],
     }),
-    
+
     // Background Music
-    getBackgroundMusic: builder.query<Array<{ id: string; name: string; url: string; duration: number }>, void>({
+    getBackgroundMusic: builder.query<
+      Array<{ id: string; name: string; url: string; duration: number }>,
+      void
+    >({
       query: () => 'background-music',
       providesTags: ['Audio'],
     }),
-    
+
     // Audio Compression
-    compressAudio: builder.mutation<string, { audioId: string; quality: 'low' | 'medium' | 'high' }>({
+    compressAudio: builder.mutation<
+      string,
+      { audioId: string; quality: 'low' | 'medium' | 'high' }
+    >({
       query: ({ audioId, quality }) => ({
         url: `compress/${audioId}`,
         method: 'POST',
         body: { quality },
       }),
-      invalidatesTags: (result, error, { audioId }) => [{ type: 'Audio', id: audioId }],
+      invalidatesTags: (result, error, { audioId }) => [
+        { type: 'Audio', id: audioId },
+      ],
     }),
-    
+
     // Audio Format Conversion
-    convertAudioFormat: builder.mutation<string, { audioId: string; format: 'mp3' | 'wav' | 'aac' | 'm4a' }>({
+    convertAudioFormat: builder.mutation<
+      string,
+      { audioId: string; format: 'mp3' | 'wav' | 'aac' | 'm4a' }
+    >({
       query: ({ audioId, format }) => ({
         url: `convert/${audioId}`,
         method: 'POST',
         body: { format },
       }),
-      invalidatesTags: (result, error, { audioId }) => [{ type: 'Audio', id: audioId }],
+      invalidatesTags: (result, error, { audioId }) => [
+        { type: 'Audio', id: audioId },
+      ],
     }),
-    
+
     // Delete Audio
     deleteAudio: builder.mutation<void, string>({
-      query: (audioId) => ({
+      query: audioId => ({
         url: audioId,
         method: 'DELETE',
       }),

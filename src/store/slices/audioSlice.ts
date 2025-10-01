@@ -19,30 +19,30 @@ const audioSlice = createSlice({
       state.isPlaying = true;
       state.currentSound = action.payload;
     },
-    stopPlaying: (state) => {
+    stopPlaying: state => {
       state.isPlaying = false;
       state.currentSound = undefined;
     },
-    pausePlaying: (state) => {
+    pausePlaying: state => {
       state.isPlaying = false;
     },
-    resumePlaying: (state) => {
+    resumePlaying: state => {
       state.isPlaying = true;
     },
     setVolume: (state, action: PayloadAction<number>) => {
       state.volume = Math.max(0, Math.min(1, action.payload));
     },
-    startRecording: (state) => {
+    startRecording: state => {
       state.isRecording = true;
       state.recordingDuration = 0;
     },
-    stopRecording: (state) => {
+    stopRecording: state => {
       state.isRecording = false;
     },
-    pauseRecording: (state) => {
+    pauseRecording: state => {
       state.isRecording = false;
     },
-    resumeRecording: (state) => {
+    resumeRecording: state => {
       state.isRecording = true;
     },
     updateRecordingDuration: (state, action: PayloadAction<number>) => {

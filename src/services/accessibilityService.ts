@@ -128,7 +128,7 @@ class AccessibilityService {
   private loadUserSettings(): void {
     if (this.currentUser?.settings?.accessibilitySettings) {
       const userSettings = this.currentUser.settings.accessibilitySettings;
-      
+
       // Update screen reader settings
       if (userSettings.screenReader) {
         this.features.screenReader = {
@@ -197,7 +197,7 @@ class AccessibilityService {
     try {
       // In a real app, this would integrate with the device's screen reader
       console.log('Screen reader setup:', this.features.screenReader);
-      
+
       // Setup speech synthesis
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         const utterance = new SpeechSynthesisUtterance();
@@ -289,7 +289,7 @@ class AccessibilityService {
         utterance.rate = this.features.screenReader.speechRate;
         utterance.pitch = this.features.screenReader.speechPitch;
         utterance.volume = this.features.screenReader.speechVolume;
-        
+
         // Set priority
         if (priority === 'high') {
           utterance.rate = Math.min(utterance.rate * 1.2, 2.0);
@@ -394,28 +394,35 @@ class AccessibilityService {
   }
 
   // One-handed mode methods
-  getOneHandedLayout(): { buttonSize: number; spacing: number; position: 'left' | 'right' | 'center' } {
+  getOneHandedLayout(): {
+    buttonSize: number;
+    spacing: number;
+    position: 'left' | 'right' | 'center';
+  } {
     if (!this.features.oneHanded.enabled) {
       return { buttonSize: 1, spacing: 1, position: 'center' };
     }
 
     const sizeMultiplier = {
-      'small': 0.8,
-      'medium': 1.0,
-      'large': 1.2,
+      small: 0.8,
+      medium: 1.0,
+      large: 1.2,
       'extra-large': 1.5,
     };
 
     const spacingMultiplier = {
-      'compact': 0.8,
-      'normal': 1.0,
-      'spacious': 1.2,
+      compact: 0.8,
+      normal: 1.0,
+      spacious: 1.2,
     };
 
     return {
       buttonSize: sizeMultiplier[this.features.oneHanded.buttonSize],
       spacing: spacingMultiplier[this.features.oneHanded.spacing],
-      position: this.features.oneHanded.mode === 'auto' ? 'center' : this.features.oneHanded.mode,
+      position:
+        this.features.oneHanded.mode === 'auto'
+          ? 'center'
+          : this.features.oneHanded.mode,
     };
   }
 

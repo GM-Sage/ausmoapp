@@ -1,27 +1,35 @@
 // Page Editor Screen
 
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TextInput, 
-  TouchableOpacity, 
+import { getThemeColors } from '../../utils/themeUtils';
+import { useVisualSettings } from '../../contexts/VisualSettingsContext';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
   Alert,
   ScrollView,
   Switch,
   FlatList,
-  Modal
+  Modal,
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 
 import { RootState } from '../../store';
-import { CommunicationPage, CommunicationButton, ButtonAction, ButtonPosition } from '../../types';
-import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../../constants';
+import {
+  CommunicationPage,
+  CommunicationButton,
+  ButtonAction,
+  ButtonPosition,
+} from '../../types';
+import { TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../../constants';
 import DatabaseService from '../../services/databaseService';
 import SymbolDataService from '../../services/symbolDataService';
 import ExpressPageWizard from '../../components/communication/ExpressPageWizard';
+import SyncedButtonLibraryScreen from './SyncedButtonLibraryScreen';
 
 interface PageEditorScreenProps {
   route?: {
@@ -35,21 +43,34 @@ interface PageEditorScreenProps {
   navigation?: any;
 }
 
-export default function PageEditorScreen({ route, navigation }: PageEditorScreenProps) {
+export default function PageEditorScreen({
+  route,
+  navigation,
+}: PageEditorScreenProps) {
+  const { theme } = useVisualSettings();
+  const safeTheme = theme || 'light'; // Ensure theme is never undefined
+  const themeColors = getThemeColors(safeTheme);
   const currentUser = useSelector((state: RootState) => state.user.currentUser);
   const [page, setPage] = useState<CommunicationPage | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [showExpressWizard, setShowExpressWizard] = useState(false);
   const [showBookSelection, setShowBookSelection] = useState(false);
+  const [showSyncedButtonLibrary, setShowSyncedButtonLibrary] = useState(false);
   const [availableBooks, setAvailableBooks] = useState<any[]>([]);
-  const [selectedBookId, setSelectedBookId] = useState<string | undefined>(bookId);
-  
+  const [selectedBookId, setSelectedBookId] = useState<string | undefined>(
+    bookId
+  );
+
   // Form fields
   const [name, setName] = useState('');
-  const [pageType, setPageType] = useState<'standard' | 'express' | 'visual-scene' | 'keyboard'>('standard');
+  const [pageType, setPageType] = useState<
+    'standard' | 'express' | 'visual-scene' | 'keyboard'
+  >('standard');
   const [gridSize, setGridSize] = useState<1 | 2 | 4 | 9 | 16 | 25 | 36>(9);
-  const [buttonSize, setButtonSize] = useState<'small' | 'medium' | 'large' | 'extra-large'>('medium');
+  const [buttonSize, setButtonSize] = useState<
+    'small' | 'medium' | 'large' | 'extra-large'
+  >('medium');
   const [backgroundColor, setBackgroundColor] = useState('#FFFFFF');
   const [buttons, setButtons] = useState<CommunicationButton[]>([]);
 
@@ -79,14 +100,14 @@ export default function PageEditorScreen({ route, navigation }: PageEditorScreen
       // Create a default page with sample buttons
       createDefaultPage();
     }
-    
+
     // Load available books for selection
     loadAvailableBooks();
   }, [pageId, routePageType]);
 
   const loadAvailableBooks = async () => {
     if (!currentUser) return;
-    
+
     try {
       const books = await DatabaseService.getBooksByUser(currentUser.id);
       setAvailableBooks(books);
@@ -97,7 +118,7 @@ export default function PageEditorScreen({ route, navigation }: PageEditorScreen
 
   const createDefaultPage = () => {
     let defaultButtons: CommunicationButton[];
-    
+
     if (pageType === 'express') {
       // Create Express-specific buttons for sentence building
       defaultButtons = [
@@ -271,7 +292,7 @@ export default function PageEditorScreen({ route, navigation }: PageEditorScreen
           isVisible: true,
           createdAt: new Date(),
           updatedAt: new Date(),
-        }
+        },
       ];
     } else {
       // Create standard buttons
@@ -283,11 +304,11 @@ export default function PageEditorScreen({ route, navigation }: PageEditorScreen
         image: symbol.image,
         ttsMessage: symbol.name,
         action: { type: 'speak' },
-        position: { 
-          row: Math.floor(index / 3), 
-          column: index % 3, 
-          width: 1, 
-          height: 1 
+        position: {
+          row: Math.floor(index / 3),
+          column: index % 3,
+          width: 1,
+          height: 1,
         },
         size: 'medium',
         backgroundColor: '#FFFFFF',
@@ -301,37 +322,37 @@ export default function PageEditorScreen({ route, navigation }: PageEditorScreen
         updatedAt: new Date(),
       }));
     }
-    
+
     setButtons(defaultButtons);
   };
 
   const getCategoryColor = (category: string): string => {
     const colorMap: { [key: string]: string } = {
-      'Greetings': '#FFD700',        // Yellow for prompts/questions
-      'Communication': '#32CD32',    // Green for positive actions
-      'Actions': '#FFD700',          // Yellow for prompts
-      'Food & Drink': '#FFD700',     // Yellow for prompts
-      'Feelings': '#FF6B6B',         // Red for negative/feelings
-      'Places': '#32CD32',           // Green for positive
-      'People': '#32CD32',           // Green for positive
-      'Objects': '#FFD700',          // Yellow for prompts
-      'Body': '#FFD700',             // Yellow for prompts
-      'Clothing': '#FFD700',         // Yellow for prompts
-      'Animals': '#FFD700',          // Yellow for prompts
-      'Colors': '#FFD700',           // Yellow for prompts
-      'Time': '#FFD700',             // Yellow for prompts
-      'Weather': '#FFD700',          // Yellow for prompts
-      'Transportation': '#FFD700',   // Yellow for prompts
-      'Shapes': '#FFD700',           // Yellow for prompts
-      'School': '#FFD700',           // Yellow for prompts
-      'Home': '#FFD700',             // Yellow for prompts
+      Greetings: '#FFD700', // Yellow for prompts/questions
+      Communication: '#32CD32', // Green for positive actions
+      Actions: '#FFD700', // Yellow for prompts
+      'Food & Drink': '#FFD700', // Yellow for prompts
+      Feelings: '#FF6B6B', // Red for negative/feelings
+      Places: '#32CD32', // Green for positive
+      People: '#32CD32', // Green for positive
+      Objects: '#FFD700', // Yellow for prompts
+      Body: '#FFD700', // Yellow for prompts
+      Clothing: '#FFD700', // Yellow for prompts
+      Animals: '#FFD700', // Yellow for prompts
+      Colors: '#FFD700', // Yellow for prompts
+      Time: '#FFD700', // Yellow for prompts
+      Weather: '#FFD700', // Yellow for prompts
+      Transportation: '#FFD700', // Yellow for prompts
+      Shapes: '#FFD700', // Yellow for prompts
+      School: '#FFD700', // Yellow for prompts
+      Home: '#FFD700', // Yellow for prompts
     };
     return colorMap[category] || '#FFD700';
   };
 
   const loadPage = async () => {
     if (!pageId) return;
-    
+
     try {
       setIsLoading(true);
       // For now, we'll create a sample page since we don't have a getPage method yet
@@ -381,7 +402,7 @@ export default function PageEditorScreen({ route, navigation }: PageEditorScreen
 
     try {
       setIsLoading(true);
-      
+
       const pageData: CommunicationPage = {
         id: page?.id || '',
         bookId: selectedBookId,
@@ -414,7 +435,7 @@ export default function PageEditorScreen({ route, navigation }: PageEditorScreen
 
   const handleAddButton = () => {
     // Navigate to symbol library to add a symbol
-    navigation?.navigate('SymbolLibrary', { 
+    navigation?.navigate('SymbolLibrary', {
       onSymbolSelect: (symbol: any) => {
         const newButton: CommunicationButton = {
           id: `btn-${symbol.id}-${Date.now()}`,
@@ -436,8 +457,39 @@ export default function PageEditorScreen({ route, navigation }: PageEditorScreen
           updatedAt: new Date(),
         };
         setButtons([...buttons, newButton]);
-      }
+      },
     });
+  };
+
+  const handleSelectSyncedButton = async (syncedButton: any) => {
+    if (!currentUser) return;
+
+    try {
+      const newButton: CommunicationButton = {
+        id: `btn_${Date.now()}`,
+        pageId: page?.id || '',
+        text: syncedButton.text,
+        image: syncedButton.image,
+        ttsMessage: syncedButton.ttsMessage,
+        action: syncedButton.action,
+        position: { row: 0, column: 0, width: 1, height: 1 },
+        size: syncedButton.size,
+        backgroundColor: syncedButton.backgroundColor,
+        textColor: syncedButton.textColor,
+        borderColor: syncedButton.borderColor,
+        borderWidth: syncedButton.borderWidth,
+        borderRadius: syncedButton.borderRadius,
+        order: buttons.length + 1,
+        isVisible: syncedButton.isVisible,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        syncedButtonId: syncedButton.id,
+      };
+      setButtons([...buttons, newButton]);
+      setShowSyncedButtonLibrary(false);
+    } catch (error) {
+      console.error('Error adding synced button:', error);
+    }
   };
 
   const handleEditButton = (buttonId: string) => {
@@ -461,7 +513,9 @@ export default function PageEditorScreen({ route, navigation }: PageEditorScreen
     );
   };
 
-  const handleExpressWizardComplete = (wizardButtons: CommunicationButton[]) => {
+  const handleExpressWizardComplete = (
+    wizardButtons: CommunicationButton[]
+  ) => {
     setButtons(wizardButtons);
     setShowExpressWizard(false);
   };
@@ -489,17 +543,19 @@ export default function PageEditorScreen({ route, navigation }: PageEditorScreen
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>Select Book</Text>
-          <Text style={styles.modalSubtitle}>Choose which book to add this page to:</Text>
-          
+          <Text style={styles.modalSubtitle}>
+            Choose which book to add this page to:
+          </Text>
+
           <ScrollView style={styles.bookList}>
-            {availableBooks.map((book) => (
+            {availableBooks.map(book => (
               <TouchableOpacity
                 key={book.id}
                 style={styles.bookOption}
                 onPress={() => handleBookSelect(book.id)}
               >
                 <View style={styles.bookIcon}>
-                  <Ionicons name="book" size={24} color={COLORS.PRIMARY} />
+                  <Ionicons name="book" size={24} color={themeColors.primary} />
                 </View>
                 <View style={styles.bookInfo}>
                   <Text style={styles.bookName}>{book.name}</Text>
@@ -507,11 +563,15 @@ export default function PageEditorScreen({ route, navigation }: PageEditorScreen
                     {book.pages?.length || 0} pages • {book.category}
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color={COLORS.TEXT_SECONDARY} />
+                <Ionicons
+                  name="chevron-forward"
+                  size={20}
+                  color={themeColors.textSecondary}
+                />
               </TouchableOpacity>
             ))}
           </ScrollView>
-          
+
           <View style={styles.modalButtons}>
             <TouchableOpacity
               style={styles.cancelButton}
@@ -552,10 +612,12 @@ export default function PageEditorScreen({ route, navigation }: PageEditorScreen
   const renderButton = ({ item }: { item: CommunicationButton }) => (
     <View style={styles.buttonItem}>
       <View style={styles.buttonPreview}>
-        <View style={[
-          styles.buttonPreviewBox,
-          { backgroundColor: item.backgroundColor }
-        ]}>
+        <View
+          style={[
+            styles.buttonPreviewBox,
+            { backgroundColor: item.backgroundColor },
+          ]}
+        >
           <Text style={[styles.buttonPreviewText, { color: item.textColor }]}>
             {item.text}
           </Text>
@@ -570,13 +632,13 @@ export default function PageEditorScreen({ route, navigation }: PageEditorScreen
           style={styles.editButton}
           onPress={() => handleEditButton(item.id)}
         >
-          <Ionicons name="pencil" size={16} color={COLORS.PRIMARY} />
+          <Ionicons name="pencil" size={16} color={themeColors.primary} />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.deleteButton}
           onPress={() => handleDeleteButton(item.id)}
         >
-          <Ionicons name="trash" size={16} color={COLORS.ERROR} />
+          <Ionicons name="trash" size={16} color={themeColors.error} />
         </TouchableOpacity>
       </View>
     </View>
@@ -603,14 +665,17 @@ export default function PageEditorScreen({ route, navigation }: PageEditorScreen
     <View style={styles.container}>
       {renderBookSelectionModal()}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation?.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.SURFACE} />
+        <TouchableOpacity
+          onPress={() => navigation?.goBack()}
+          style={styles.backButton}
+        >
+          <Ionicons name="arrow-back" size={24} color={themeColors.surface} />
         </TouchableOpacity>
         <Text style={styles.title}>
           {pageId ? 'Edit Page' : 'Create New Page'}
         </Text>
         <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
-          <Ionicons name="checkmark" size={24} color={COLORS.SURFACE} />
+          <Ionicons name="checkmark" size={24} color={themeColors.surface} />
         </TouchableOpacity>
       </View>
 
@@ -630,19 +695,21 @@ export default function PageEditorScreen({ route, navigation }: PageEditorScreen
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Page Type</Text>
             <View style={styles.optionContainer}>
-              {pageTypes.map((type) => (
+              {pageTypes.map(type => (
                 <TouchableOpacity
                   key={type.value}
                   style={[
                     styles.optionButton,
-                    pageType === type.value && styles.optionButtonActive
+                    pageType === type.value && styles.optionButtonActive,
                   ]}
                   onPress={() => isEditing && setPageType(type.value as any)}
                 >
-                  <Text style={[
-                    styles.optionButtonText,
-                    pageType === type.value && styles.optionButtonTextActive
-                  ]}>
+                  <Text
+                    style={[
+                      styles.optionButtonText,
+                      pageType === type.value && styles.optionButtonTextActive,
+                    ]}
+                  >
                     {type.label}
                   </Text>
                 </TouchableOpacity>
@@ -653,19 +720,24 @@ export default function PageEditorScreen({ route, navigation }: PageEditorScreen
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Grid Size</Text>
             <View style={styles.optionContainer}>
-              {gridSizes.map((size) => (
+              {gridSizes.map(size => (
                 <TouchableOpacity
                   key={size.value}
                   style={[
                     styles.optionButton,
-                    gridSize === size.value && styles.optionButtonActive
+                    gridSize === size.value && styles.optionButtonActive,
                   ]}
-                  onPress={() => isEditing && setGridSize(size.value as 1 | 2 | 4 | 9 | 16 | 25 | 36)}
+                  onPress={() =>
+                    isEditing &&
+                    setGridSize(size.value as 1 | 2 | 4 | 9 | 16 | 25 | 36)
+                  }
                 >
-                  <Text style={[
-                    styles.optionButtonText,
-                    gridSize === size.value && styles.optionButtonTextActive
-                  ]}>
+                  <Text
+                    style={[
+                      styles.optionButtonText,
+                      gridSize === size.value && styles.optionButtonTextActive,
+                    ]}
+                  >
                     {size.label}
                   </Text>
                 </TouchableOpacity>
@@ -676,19 +748,22 @@ export default function PageEditorScreen({ route, navigation }: PageEditorScreen
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Button Size</Text>
             <View style={styles.optionContainer}>
-              {buttonSizes.map((size) => (
+              {buttonSizes.map(size => (
                 <TouchableOpacity
                   key={size.value}
                   style={[
                     styles.optionButton,
-                    buttonSize === size.value && styles.optionButtonActive
+                    buttonSize === size.value && styles.optionButtonActive,
                   ]}
                   onPress={() => isEditing && setButtonSize(size.value as any)}
                 >
-                  <Text style={[
-                    styles.optionButtonText,
-                    buttonSize === size.value && styles.optionButtonTextActive
-                  ]}>
+                  <Text
+                    style={[
+                      styles.optionButtonText,
+                      buttonSize === size.value &&
+                        styles.optionButtonTextActive,
+                    ]}
+                  >
                     {size.label}
                   </Text>
                 </TouchableOpacity>
@@ -710,23 +785,49 @@ export default function PageEditorScreen({ route, navigation }: PageEditorScreen
           <View style={styles.inputGroup}>
             <View style={styles.sectionHeader}>
               <Text style={styles.label}>Buttons ({buttons.length})</Text>
-              <TouchableOpacity
-                style={styles.addButton}
-                onPress={handleAddButton}
-              >
-                <Ionicons name="add" size={20} color={COLORS.SURFACE} />
-              </TouchableOpacity>
+              <View style={styles.buttonActions}>
+                <TouchableOpacity
+                  style={[styles.addButton, styles.syncedButton]}
+                  onPress={() => setShowSyncedButtonLibrary(true)}
+                >
+                  <Ionicons
+                    name="library"
+                    size={20}
+                    color={themeColors.surface}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.addButton}
+                  onPress={handleAddButton}
+                >
+                  <Ionicons name="add" size={20} color={themeColors.surface} />
+                </TouchableOpacity>
+              </View>
             </View>
-            
+
             <FlatList
               data={buttons}
               renderItem={renderButton}
-              keyExtractor={(item) => item.id}
+              keyExtractor={item => item.id}
               scrollEnabled={false}
             />
           </View>
         </View>
       </ScrollView>
+
+      {/* Synced Button Library Modal */}
+      {showSyncedButtonLibrary && (
+        <Modal
+          visible={showSyncedButtonLibrary}
+          animationType="slide"
+          presentationStyle="pageSheet"
+        >
+          <SyncedButtonLibraryScreen
+            onSelectButton={handleSelectSyncedButton}
+            onClose={() => setShowSyncedButtonLibrary(false)}
+          />
+        </Modal>
+      )}
     </View>
   );
 }
@@ -734,23 +835,23 @@ export default function PageEditorScreen({ route, navigation }: PageEditorScreen
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: themeColors.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: themeColors.background,
   },
   loadingText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: COLORS.PRIMARY,
+    backgroundColor: themeColors.primary,
     paddingHorizontal: SPACING.MD,
     paddingVertical: SPACING.SM,
     paddingTop: 50,
@@ -761,7 +862,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: TYPOGRAPHY.FONT_SIZES.TITLE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.SURFACE,
+    color: themeColors.surface,
     flex: 1,
     textAlign: 'center',
   },
@@ -781,18 +882,18 @@ const styles = StyleSheet.create({
   label: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginBottom: SPACING.SM,
   },
   input: {
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     borderWidth: 1,
-    borderColor: COLORS.BORDER,
+    borderColor: themeColors.border,
     borderRadius: BORDER_RADIUS.MEDIUM,
     paddingHorizontal: SPACING.MD,
     paddingVertical: SPACING.SM,
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
   },
   optionContainer: {
     flexDirection: 'row',
@@ -802,21 +903,21 @@ const styles = StyleSheet.create({
   optionButton: {
     paddingHorizontal: SPACING.MD,
     paddingVertical: SPACING.SM,
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     borderWidth: 1,
-    borderColor: COLORS.BORDER,
+    borderColor: themeColors.border,
     borderRadius: BORDER_RADIUS.MEDIUM,
   },
   optionButtonActive: {
-    backgroundColor: COLORS.PRIMARY,
-    borderColor: COLORS.PRIMARY,
+    backgroundColor: themeColors.primary,
+    borderColor: themeColors.primary,
   },
   optionButtonText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
   },
   optionButtonTextActive: {
-    color: COLORS.SURFACE,
+    color: themeColors.surface,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -824,23 +925,30 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: SPACING.SM,
   },
+  buttonActions: {
+    flexDirection: 'row',
+  },
   addButton: {
-    backgroundColor: COLORS.PRIMARY,
+    backgroundColor: themeColors.primary,
     width: 32,
     height: 32,
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
+    marginLeft: SPACING.XS,
+  },
+  syncedButton: {
+    backgroundColor: themeColors.secondary,
   },
   buttonItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     padding: SPACING.MD,
     marginBottom: SPACING.SM,
     borderRadius: BORDER_RADIUS.MEDIUM,
     borderWidth: 1,
-    borderColor: COLORS.BORDER,
+    borderColor: themeColors.border,
   },
   buttonPreview: {
     marginRight: SPACING.MD,
@@ -862,11 +970,11 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
   },
   buttonAction: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
   buttonActions: {
     flexDirection: 'row',
@@ -886,7 +994,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     borderRadius: BORDER_RADIUS.LARGE,
     padding: SPACING.LG,
     width: '90%',
@@ -895,12 +1003,12 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginBottom: SPACING.SM,
   },
   modalSubtitle: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
     marginBottom: SPACING.LG,
   },
   bookList: {
@@ -910,7 +1018,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: SPACING.MD,
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: themeColors.background,
     borderRadius: BORDER_RADIUS.MEDIUM,
     marginBottom: SPACING.SM,
   },
@@ -918,7 +1026,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: SPACING.MD,
@@ -929,12 +1037,12 @@ const styles = StyleSheet.create({
   bookName: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginBottom: 2,
   },
   bookDescription: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
   modalButtons: {
     flexDirection: 'row',
@@ -947,6 +1055,6 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
 });

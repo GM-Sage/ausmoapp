@@ -1,6 +1,8 @@
 // Localization Settings Screen
 
 import React, { useState, useEffect } from 'react';
+import { getThemeColors } from '../../utils/themeUtils';
+import { useVisualSettings } from '../../contexts/VisualSettingsContext';
 import {
   View,
   Text,
@@ -15,21 +17,29 @@ import { useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 
 import { RootState } from '../../store';
-import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../../constants';
-import LocalizationService, { 
-  Language, 
-  LocalizationSettings, 
-  VoiceSettings 
+import { deserializeUserForService } from '../../store/slices/userSlice';
+import { TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../../constants';
+import LocalizationService, {
+  Language,
+  LocalizationSettings,
+  VoiceSettings,
 } from '../../services/localizationService';
 
 export default function LocalizationSettingsScreen() {
+  const { theme } = useVisualSettings();
+  const safeTheme = theme || 'light'; // Ensure theme is never undefined
+  const themeColors = getThemeColors(safeTheme);
   const currentUser = useSelector((state: RootState) => state.user.currentUser);
-  const [localizationService] = useState(() => LocalizationService.getInstance());
+  const [localizationService] = useState(() =>
+    LocalizationService.getInstance()
+  );
   const [settings, setSettings] = useState<LocalizationSettings | null>(null);
   const [supportedLanguages, setSupportedLanguages] = useState<Language[]>([]);
   const [currentLanguage, setCurrentLanguage] = useState<string>('en');
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedTab, setSelectedTab] = useState<'language' | 'voice' | 'format' | 'cultural'>('language');
+  const [selectedTab, setSelectedTab] = useState<
+    'language' | 'voice' | 'format' | 'cultural'
+  >('language');
 
   useEffect(() => {
     if (currentUser) {
@@ -42,13 +52,15 @@ export default function LocalizationSettingsScreen() {
 
     try {
       setIsLoading(true);
-      await localizationService.initialize(currentUser);
-      
+      await localizationService.initialize(
+        deserializeUserForService(currentUser)
+      );
+
       const [localizationSettings, languages] = await Promise.all([
         localizationService.getLocalizationSettings(),
         localizationService.getSupportedLanguages(),
       ]);
-      
+
       setSettings(localizationSettings);
       setSupportedLanguages(languages);
       setCurrentLanguage(localizationService.getCurrentLanguage());
@@ -65,10 +77,12 @@ export default function LocalizationSettingsScreen() {
       await localizationService.updateLocalizationSettings({
         currentLanguage: languageCode,
       });
-      
+
       setCurrentLanguage(languageCode);
-      setSettings(prev => prev ? { ...prev, currentLanguage: languageCode } : null);
-      
+      setSettings(prev =>
+        prev ? { ...prev, currentLanguage: languageCode } : null
+      );
+
       Alert.alert('Success', 'Language changed successfully');
     } catch (error) {
       console.error('Error changing language:', error);
@@ -76,14 +90,17 @@ export default function LocalizationSettingsScreen() {
     }
   };
 
-  const handleSettingChange = async (key: keyof LocalizationSettings, value: boolean | string) => {
+  const handleSettingChange = async (
+    key: keyof LocalizationSettings,
+    value: boolean | string
+  ) => {
     if (!settings) return;
 
     try {
       const updatedSettings = { ...settings, [key]: value };
       await localizationService.updateLocalizationSettings(updatedSettings);
       setSettings(updatedSettings);
-      
+
       Alert.alert('Success', 'Setting updated successfully');
     } catch (error) {
       console.error('Error updating setting:', error);
@@ -94,8 +111,11 @@ export default function LocalizationSettingsScreen() {
   const handleVoiceTest = async (languageCode: string) => {
     try {
       const voiceSettings = localizationService.getVoiceSettings(languageCode);
-      const testText = localizationService.getString('comm.hello', languageCode);
-      
+      const testText = localizationService.getString(
+        'comm.hello',
+        languageCode
+      );
+
       Alert.alert(
         'Voice Test',
         `Language: ${voiceSettings.language}\nVoice: ${voiceSettings.voice}\nGender: ${voiceSettings.gender}\nAccent: ${voiceSettings.accent}\n\nTest Text: "${testText}"`,
@@ -111,14 +131,15 @@ export default function LocalizationSettingsScreen() {
     return (
       <View style={styles.languageContainer}>
         <Text style={styles.sectionTitle}>Language Settings</Text>
-        
+
         {/* Current Language */}
         <View style={styles.currentLanguageCard}>
           <View style={styles.currentLanguageInfo}>
-            <Ionicons name="globe" size={24} color={COLORS.PRIMARY} />
+            <Ionicons name="globe" size={24} color={themeColors.primary} />
             <View style={styles.currentLanguageDetails}>
               <Text style={styles.currentLanguageName}>
-                {supportedLanguages.find(lang => lang.code === currentLanguage)?.name || 'English'}
+                {supportedLanguages.find(lang => lang.code === currentLanguage)
+                  ?.name || 'English'}
               </Text>
               <Text style={styles.currentLanguageCode}>
                 {currentLanguage.toUpperCase()}
@@ -126,26 +147,32 @@ export default function LocalizationSettingsScreen() {
             </View>
           </View>
           <View style={styles.currentLanguageStatus}>
-            <Ionicons name="checkmark-circle" size={24} color={COLORS.SUCCESS} />
+            <Ionicons
+              name="checkmark-circle"
+              size={24}
+              color={themeColors.success}
+            />
           </View>
         </View>
 
         {/* Supported Languages */}
         <Text style={styles.subsectionTitle}>Available Languages</Text>
-        
-        {supportedLanguages.map((language) => (
+
+        {supportedLanguages.map(language => (
           <TouchableOpacity
             key={language.code}
             style={[
               styles.languageCard,
-              currentLanguage === language.code && styles.languageCardSelected
+              currentLanguage === language.code && styles.languageCardSelected,
             ]}
             onPress={() => handleLanguageChange(language.code)}
           >
             <View style={styles.languageInfo}>
               <View style={styles.languageDetails}>
                 <Text style={styles.languageName}>{language.name}</Text>
-                <Text style={styles.languageNativeName}>{language.nativeName}</Text>
+                <Text style={styles.languageNativeName}>
+                  {language.nativeName}
+                </Text>
                 <Text style={styles.languageRegion}>{language.region}</Text>
               </View>
               <View style={styles.languageMeta}>
@@ -161,10 +188,14 @@ export default function LocalizationSettingsScreen() {
                 </View>
               </View>
             </View>
-            
+
             {currentLanguage === language.code && (
               <View style={styles.selectedIndicator}>
-                <Ionicons name="checkmark-circle" size={24} color={COLORS.PRIMARY} />
+                <Ionicons
+                  name="checkmark-circle"
+                  size={24}
+                  color={themeColors.primary}
+                />
               </View>
             )}
           </TouchableOpacity>
@@ -177,27 +208,36 @@ export default function LocalizationSettingsScreen() {
     if (!settings) return null;
 
     const voiceSettings = localizationService.getVoiceSettings(currentLanguage);
-    const currentLanguageInfo = supportedLanguages.find(lang => lang.code === currentLanguage);
+    const currentLanguageInfo = supportedLanguages.find(
+      lang => lang.code === currentLanguage
+    );
 
     return (
       <View style={styles.voiceContainer}>
         <Text style={styles.sectionTitle}>Voice Settings</Text>
-        
+
         {/* Current Voice */}
         <View style={styles.voiceCard}>
           <View style={styles.voiceHeader}>
-            <Ionicons name="volume-high" size={24} color={COLORS.PRIMARY} />
+            <Ionicons
+              name="volume-high"
+              size={24}
+              color={themeColors.primary}
+            />
             <View style={styles.voiceInfo}>
-              <Text style={styles.voiceName}>{currentLanguageInfo?.name || 'English'}</Text>
+              <Text style={styles.voiceName}>
+                {currentLanguageInfo?.name || 'English'}
+              </Text>
               <Text style={styles.voiceDetails}>
-                {voiceSettings.voice} • {voiceSettings.gender} • {voiceSettings.accent}
+                {voiceSettings.voice} • {voiceSettings.gender} •{' '}
+                {voiceSettings.accent}
               </Text>
             </View>
             <TouchableOpacity
               style={styles.testButton}
               onPress={() => handleVoiceTest(currentLanguage)}
             >
-              <Ionicons name="play" size={16} color={COLORS.PRIMARY} />
+              <Ionicons name="play" size={16} color={themeColors.primary} />
               <Text style={styles.testButtonText}>Test</Text>
             </TouchableOpacity>
           </View>
@@ -206,36 +246,50 @@ export default function LocalizationSettingsScreen() {
         {/* Voice Settings */}
         <View style={styles.voiceSettingsCard}>
           <Text style={styles.subsectionTitle}>Voice Preferences</Text>
-          
+
           <View style={styles.voiceSettingItem}>
             <View style={styles.voiceSettingInfo}>
-              <Ionicons name="speedometer" size={20} color={COLORS.TEXT_SECONDARY} />
+              <Ionicons
+                name="speedometer"
+                size={20}
+                color={themeColors.textSecondary}
+              />
               <Text style={styles.voiceSettingLabel}>Speed</Text>
             </View>
             <Text style={styles.voiceSettingValue}>{voiceSettings.speed}x</Text>
           </View>
-          
+
           <View style={styles.voiceSettingItem}>
             <View style={styles.voiceSettingInfo}>
-              <Ionicons name="trending-up" size={20} color={COLORS.TEXT_SECONDARY} />
+              <Ionicons
+                name="trending-up"
+                size={20}
+                color={themeColors.textSecondary}
+              />
               <Text style={styles.voiceSettingLabel}>Pitch</Text>
             </View>
             <Text style={styles.voiceSettingValue}>{voiceSettings.pitch}x</Text>
           </View>
-          
+
           <View style={styles.voiceSettingItem}>
             <View style={styles.voiceSettingInfo}>
-              <Ionicons name="volume-high" size={20} color={COLORS.TEXT_SECONDARY} />
+              <Ionicons
+                name="volume-high"
+                size={20}
+                color={themeColors.textSecondary}
+              />
               <Text style={styles.voiceSettingLabel}>Volume</Text>
             </View>
-            <Text style={styles.voiceSettingValue}>{Math.round(voiceSettings.volume * 100)}%</Text>
+            <Text style={styles.voiceSettingValue}>
+              {Math.round(voiceSettings.volume * 100)}%
+            </Text>
           </View>
         </View>
 
         {/* Voice Localization */}
         <View style={styles.settingItem}>
           <View style={styles.settingInfo}>
-            <Ionicons name="globe" size={24} color={COLORS.PRIMARY} />
+            <Ionicons name="globe" size={24} color={themeColors.primary} />
             <View style={styles.settingDetails}>
               <Text style={styles.settingName}>Voice Localization</Text>
               <Text style={styles.settingDescription}>
@@ -245,9 +299,18 @@ export default function LocalizationSettingsScreen() {
           </View>
           <Switch
             value={settings.voiceLocalization}
-            onValueChange={(value) => handleSettingChange('voiceLocalization', value)}
-            trackColor={{ false: COLORS.BORDER, true: COLORS.PRIMARY }}
-            thumbColor={settings.voiceLocalization ? COLORS.SURFACE : COLORS.TEXT_SECONDARY}
+            onValueChange={value =>
+              handleSettingChange('voiceLocalization', value)
+            }
+            trackColor={{
+              false: themeColors.border,
+              true: themeColors.primary,
+            }}
+            thumbColor={
+              settings.voiceLocalization
+                ? themeColors.surface
+                : themeColors.textSecondary
+            }
           />
         </View>
       </View>
@@ -260,11 +323,11 @@ export default function LocalizationSettingsScreen() {
     return (
       <View style={styles.formatContainer}>
         <Text style={styles.sectionTitle}>Format Settings</Text>
-        
+
         {/* Date Format */}
         <View style={styles.settingItem}>
           <View style={styles.settingInfo}>
-            <Ionicons name="calendar" size={24} color={COLORS.PRIMARY} />
+            <Ionicons name="calendar" size={24} color={themeColors.primary} />
             <View style={styles.settingDetails}>
               <Text style={styles.settingName}>Date Format</Text>
               <Text style={styles.settingDescription}>
@@ -275,16 +338,24 @@ export default function LocalizationSettingsScreen() {
           <TouchableOpacity
             style={styles.settingButton}
             onPress={() => {
-              Alert.alert(
-                'Date Format',
-                'Select date format',
-                [
-                  { text: 'MM/DD/YYYY', onPress: () => handleSettingChange('dateFormat', 'MM/DD/YYYY') },
-                  { text: 'DD/MM/YYYY', onPress: () => handleSettingChange('dateFormat', 'DD/MM/YYYY') },
-                  { text: 'YYYY-MM-DD', onPress: () => handleSettingChange('dateFormat', 'YYYY-MM-DD') },
-                  { text: 'Cancel', style: 'cancel' },
-                ]
-              );
+              Alert.alert('Date Format', 'Select date format', [
+                {
+                  text: 'MM/DD/YYYY',
+                  onPress: () =>
+                    handleSettingChange('dateFormat', 'MM/DD/YYYY'),
+                },
+                {
+                  text: 'DD/MM/YYYY',
+                  onPress: () =>
+                    handleSettingChange('dateFormat', 'DD/MM/YYYY'),
+                },
+                {
+                  text: 'YYYY-MM-DD',
+                  onPress: () =>
+                    handleSettingChange('dateFormat', 'YYYY-MM-DD'),
+                },
+                { text: 'Cancel', style: 'cancel' },
+              ]);
             }}
           >
             <Text style={styles.settingButtonText}>{settings.dateFormat}</Text>
@@ -294,7 +365,7 @@ export default function LocalizationSettingsScreen() {
         {/* Time Format */}
         <View style={styles.settingItem}>
           <View style={styles.settingInfo}>
-            <Ionicons name="time" size={24} color={COLORS.PRIMARY} />
+            <Ionicons name="time" size={24} color={themeColors.primary} />
             <View style={styles.settingDetails}>
               <Text style={styles.settingName}>Time Format</Text>
               <Text style={styles.settingDescription}>
@@ -305,15 +376,17 @@ export default function LocalizationSettingsScreen() {
           <TouchableOpacity
             style={styles.settingButton}
             onPress={() => {
-              Alert.alert(
-                'Time Format',
-                'Select time format',
-                [
-                  { text: '12 Hour', onPress: () => handleSettingChange('timeFormat', '12h') },
-                  { text: '24 Hour', onPress: () => handleSettingChange('timeFormat', '24h') },
-                  { text: 'Cancel', style: 'cancel' },
-                ]
-              );
+              Alert.alert('Time Format', 'Select time format', [
+                {
+                  text: '12 Hour',
+                  onPress: () => handleSettingChange('timeFormat', '12h'),
+                },
+                {
+                  text: '24 Hour',
+                  onPress: () => handleSettingChange('timeFormat', '24h'),
+                },
+                { text: 'Cancel', style: 'cancel' },
+              ]);
             }}
           >
             <Text style={styles.settingButtonText}>{settings.timeFormat}</Text>
@@ -323,7 +396,7 @@ export default function LocalizationSettingsScreen() {
         {/* Number Format */}
         <View style={styles.settingItem}>
           <View style={styles.settingInfo}>
-            <Ionicons name="calculator" size={24} color={COLORS.PRIMARY} />
+            <Ionicons name="calculator" size={24} color={themeColors.primary} />
             <View style={styles.settingDetails}>
               <Text style={styles.settingName}>Number Format</Text>
               <Text style={styles.settingDescription}>
@@ -334,25 +407,29 @@ export default function LocalizationSettingsScreen() {
           <TouchableOpacity
             style={styles.settingButton}
             onPress={() => {
-              Alert.alert(
-                'Number Format',
-                'Select number format',
-                [
-                  { text: 'US (1,234.56)', onPress: () => handleSettingChange('numberFormat', 'US') },
-                  { text: 'EU (1.234,56)', onPress: () => handleSettingChange('numberFormat', 'EU') },
-                  { text: 'Cancel', style: 'cancel' },
-                ]
-              );
+              Alert.alert('Number Format', 'Select number format', [
+                {
+                  text: 'US (1,234.56)',
+                  onPress: () => handleSettingChange('numberFormat', 'US'),
+                },
+                {
+                  text: 'EU (1.234,56)',
+                  onPress: () => handleSettingChange('numberFormat', 'EU'),
+                },
+                { text: 'Cancel', style: 'cancel' },
+              ]);
             }}
           >
-            <Text style={styles.settingButtonText}>{settings.numberFormat}</Text>
+            <Text style={styles.settingButtonText}>
+              {settings.numberFormat}
+            </Text>
           </TouchableOpacity>
         </View>
 
         {/* Currency Format */}
         <View style={styles.settingItem}>
           <View style={styles.settingInfo}>
-            <Ionicons name="card" size={24} color={COLORS.PRIMARY} />
+            <Ionicons name="card" size={24} color={themeColors.primary} />
             <View style={styles.settingDetails}>
               <Text style={styles.settingName}>Currency Format</Text>
               <Text style={styles.settingDescription}>
@@ -363,19 +440,26 @@ export default function LocalizationSettingsScreen() {
           <TouchableOpacity
             style={styles.settingButton}
             onPress={() => {
-              Alert.alert(
-                'Currency Format',
-                'Select currency format',
-                [
-                  { text: 'USD ($)', onPress: () => handleSettingChange('currencyFormat', 'USD') },
-                  { text: 'EUR (€)', onPress: () => handleSettingChange('currencyFormat', 'EUR') },
-                  { text: 'GBP (£)', onPress: () => handleSettingChange('currencyFormat', 'GBP') },
-                  { text: 'Cancel', style: 'cancel' },
-                ]
-              );
+              Alert.alert('Currency Format', 'Select currency format', [
+                {
+                  text: 'USD ($)',
+                  onPress: () => handleSettingChange('currencyFormat', 'USD'),
+                },
+                {
+                  text: 'EUR (€)',
+                  onPress: () => handleSettingChange('currencyFormat', 'EUR'),
+                },
+                {
+                  text: 'GBP (£)',
+                  onPress: () => handleSettingChange('currencyFormat', 'GBP'),
+                },
+                { text: 'Cancel', style: 'cancel' },
+              ]);
             }}
           >
-            <Text style={styles.settingButtonText}>{settings.currencyFormat}</Text>
+            <Text style={styles.settingButtonText}>
+              {settings.currencyFormat}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -388,11 +472,11 @@ export default function LocalizationSettingsScreen() {
     return (
       <View style={styles.culturalContainer}>
         <Text style={styles.sectionTitle}>Cultural Settings</Text>
-        
+
         {/* Cultural Sensitivity */}
         <View style={styles.settingItem}>
           <View style={styles.settingInfo}>
-            <Ionicons name="heart" size={24} color={COLORS.PRIMARY} />
+            <Ionicons name="heart" size={24} color={themeColors.primary} />
             <View style={styles.settingDetails}>
               <Text style={styles.settingName}>Cultural Sensitivity</Text>
               <Text style={styles.settingDescription}>
@@ -402,16 +486,25 @@ export default function LocalizationSettingsScreen() {
           </View>
           <Switch
             value={settings.culturalSensitivity}
-            onValueChange={(value) => handleSettingChange('culturalSensitivity', value)}
-            trackColor={{ false: COLORS.BORDER, true: COLORS.PRIMARY }}
-            thumbColor={settings.culturalSensitivity ? COLORS.SURFACE : COLORS.TEXT_SECONDARY}
+            onValueChange={value =>
+              handleSettingChange('culturalSensitivity', value)
+            }
+            trackColor={{
+              false: themeColors.border,
+              true: themeColors.primary,
+            }}
+            thumbColor={
+              settings.culturalSensitivity
+                ? themeColors.surface
+                : themeColors.textSecondary
+            }
           />
         </View>
 
         {/* Symbol Localization */}
         <View style={styles.settingItem}>
           <View style={styles.settingInfo}>
-            <Ionicons name="images" size={24} color={COLORS.PRIMARY} />
+            <Ionicons name="images" size={24} color={themeColors.primary} />
             <View style={styles.settingDetails}>
               <Text style={styles.settingName}>Symbol Localization</Text>
               <Text style={styles.settingDescription}>
@@ -421,39 +514,42 @@ export default function LocalizationSettingsScreen() {
           </View>
           <Switch
             value={settings.symbolLocalization}
-            onValueChange={(value) => handleSettingChange('symbolLocalization', value)}
-            trackColor={{ false: COLORS.BORDER, true: COLORS.PRIMARY }}
-            thumbColor={settings.symbolLocalization ? COLORS.SURFACE : COLORS.TEXT_SECONDARY}
+            onValueChange={value =>
+              handleSettingChange('symbolLocalization', value)
+            }
+            trackColor={{
+              false: themeColors.border,
+              true: themeColors.primary,
+            }}
+            thumbColor={
+              settings.symbolLocalization
+                ? themeColors.surface
+                : themeColors.textSecondary
+            }
           />
         </View>
 
         {/* Cultural Examples */}
         <View style={styles.culturalExamplesCard}>
           <Text style={styles.subsectionTitle}>Cultural Examples</Text>
-          
+
           <View style={styles.culturalExample}>
             <Text style={styles.culturalExampleTitle}>Greeting</Text>
-            <Text style={styles.culturalExampleText}>
-              Western: 👋 Wave
-            </Text>
-            <Text style={styles.culturalExampleText}>
-              Eastern: 🙏 Bow
-            </Text>
+            <Text style={styles.culturalExampleText}>Western: 👋 Wave</Text>
+            <Text style={styles.culturalExampleText}>Eastern: 🙏 Bow</Text>
             <Text style={styles.culturalExampleText}>
               Arabic: 🤲 Open hands
             </Text>
           </View>
-          
+
           <View style={styles.culturalExample}>
             <Text style={styles.culturalExampleTitle}>Food</Text>
-            <Text style={styles.culturalExampleText}>
-              Rice: 🍚 (Universal)
-            </Text>
+            <Text style={styles.culturalExampleText}>Rice: 🍚 (Universal)</Text>
             <Text style={styles.culturalExampleText}>
               Bread: 🍞 (Western) / 🥖 (French)
             </Text>
           </View>
-          
+
           <View style={styles.culturalExample}>
             <Text style={styles.culturalExampleTitle}>Family</Text>
             <Text style={styles.culturalExampleText}>
@@ -486,7 +582,7 @@ export default function LocalizationSettingsScreen() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.PRIMARY} />
+        <ActivityIndicator size="large" color={themeColors.primary} />
         <Text style={styles.loadingText}>Loading localization data...</Text>
       </View>
     );
@@ -501,24 +597,30 @@ export default function LocalizationSettingsScreen() {
           { key: 'voice', label: 'Voice', icon: 'volume-high' },
           { key: 'format', label: 'Format', icon: 'calendar' },
           { key: 'cultural', label: 'Cultural', icon: 'heart' },
-        ].map((tab) => (
+        ].map(tab => (
           <TouchableOpacity
             key={tab.key}
             style={[
               styles.tabButton,
-              selectedTab === tab.key && styles.tabButtonSelected
+              selectedTab === tab.key && styles.tabButtonSelected,
             ]}
             onPress={() => setSelectedTab(tab.key as any)}
           >
-            <Ionicons 
-              name={tab.icon as any} 
-              size={20} 
-              color={selectedTab === tab.key ? COLORS.SURFACE : COLORS.TEXT_SECONDARY} 
+            <Ionicons
+              name={tab.icon as any}
+              size={20}
+              color={
+                selectedTab === tab.key
+                  ? themeColors.surface
+                  : themeColors.textSecondary
+              }
             />
-            <Text style={[
-              styles.tabButtonText,
-              selectedTab === tab.key && styles.tabButtonTextSelected
-            ]}>
+            <Text
+              style={[
+                styles.tabButtonText,
+                selectedTab === tab.key && styles.tabButtonTextSelected,
+              ]}
+            >
               {tab.label}
             </Text>
           </TouchableOpacity>
@@ -526,7 +628,7 @@ export default function LocalizationSettingsScreen() {
       </View>
 
       {/* Content */}
-      <ScrollView 
+      <ScrollView
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
@@ -540,24 +642,24 @@ export default function LocalizationSettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: themeColors.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: themeColors.background,
   },
   loadingText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
     marginTop: SPACING.MD,
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.BORDER,
+    borderBottomColor: themeColors.border,
   },
   tabButton: {
     flex: 1,
@@ -569,15 +671,15 @@ const styles = StyleSheet.create({
     gap: SPACING.XS,
   },
   tabButtonSelected: {
-    backgroundColor: COLORS.PRIMARY,
+    backgroundColor: themeColors.primary,
   },
   tabButtonText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
   },
   tabButtonTextSelected: {
-    color: COLORS.SURFACE,
+    color: themeColors.surface,
   },
   content: {
     flex: 1,
@@ -588,13 +690,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginBottom: SPACING.MD,
   },
   subsectionTitle: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginBottom: SPACING.SM,
     marginTop: SPACING.MD,
   },
@@ -602,13 +704,13 @@ const styles = StyleSheet.create({
     gap: SPACING.MD,
   },
   currentLanguageCard: {
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     borderRadius: BORDER_RADIUS.MD,
     padding: SPACING.MD,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    shadowColor: COLORS.TEXT_PRIMARY,
+    shadowColor: themeColors.text_PRIMARY,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -625,20 +727,20 @@ const styles = StyleSheet.create({
   currentLanguageName: {
     fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
   },
   currentLanguageCode: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
   currentLanguageStatus: {
     alignItems: 'center',
   },
   languageCard: {
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     borderRadius: BORDER_RADIUS.MD,
     padding: SPACING.MD,
-    shadowColor: COLORS.TEXT_PRIMARY,
+    shadowColor: themeColors.text_PRIMARY,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -646,7 +748,7 @@ const styles = StyleSheet.create({
   },
   languageCardSelected: {
     borderWidth: 2,
-    borderColor: COLORS.PRIMARY,
+    borderColor: themeColors.primary,
   },
   languageInfo: {
     flexDirection: 'row',
@@ -659,24 +761,24 @@ const styles = StyleSheet.create({
   languageName: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginBottom: SPACING.XS,
   },
   languageNativeName: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
     marginBottom: SPACING.XS,
   },
   languageRegion: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
   languageMeta: {
     flexDirection: 'row',
     gap: SPACING.XS,
   },
   rtlBadge: {
-    backgroundColor: COLORS.WARNING,
+    backgroundColor: themeColors.warning,
     paddingHorizontal: SPACING.XS,
     paddingVertical: 2,
     borderRadius: BORDER_RADIUS.SM,
@@ -684,10 +786,10 @@ const styles = StyleSheet.create({
   rtlBadgeText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.XS,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.SURFACE,
+    color: themeColors.surface,
   },
   symbolSetBadge: {
-    backgroundColor: COLORS.INFO,
+    backgroundColor: themeColors.info,
     paddingHorizontal: SPACING.XS,
     paddingVertical: 2,
     borderRadius: BORDER_RADIUS.SM,
@@ -695,7 +797,7 @@ const styles = StyleSheet.create({
   symbolSetBadgeText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.XS,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.SURFACE,
+    color: themeColors.surface,
   },
   selectedIndicator: {
     alignItems: 'center',
@@ -704,10 +806,10 @@ const styles = StyleSheet.create({
     gap: SPACING.MD,
   },
   voiceCard: {
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     borderRadius: BORDER_RADIUS.MD,
     padding: SPACING.MD,
-    shadowColor: COLORS.TEXT_PRIMARY,
+    shadowColor: themeColors.text_PRIMARY,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -724,34 +826,34 @@ const styles = StyleSheet.create({
   voiceName: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginBottom: SPACING.XS,
   },
   voiceDetails: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
   testButton: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: SPACING.SM,
     paddingVertical: SPACING.XS,
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: themeColors.background,
     borderRadius: BORDER_RADIUS.SM,
     borderWidth: 1,
-    borderColor: COLORS.PRIMARY,
+    borderColor: themeColors.primary,
     gap: SPACING.XS,
   },
   testButtonText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.PRIMARY,
+    color: themeColors.primary,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
   },
   voiceSettingsCard: {
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     borderRadius: BORDER_RADIUS.MD,
     padding: SPACING.MD,
-    shadowColor: COLORS.TEXT_PRIMARY,
+    shadowColor: themeColors.text_PRIMARY,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -770,21 +872,21 @@ const styles = StyleSheet.create({
   },
   voiceSettingLabel: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
   },
   voiceSettingValue: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.PRIMARY,
+    color: themeColors.primary,
   },
   settingItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     borderRadius: BORDER_RADIUS.MD,
     padding: SPACING.MD,
-    shadowColor: COLORS.TEXT_PRIMARY,
+    shadowColor: themeColors.text_PRIMARY,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -802,24 +904,24 @@ const styles = StyleSheet.create({
   settingName: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginBottom: SPACING.XS,
   },
   settingDescription: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
   settingButton: {
     paddingHorizontal: SPACING.SM,
     paddingVertical: SPACING.XS,
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: themeColors.background,
     borderRadius: BORDER_RADIUS.SM,
     borderWidth: 1,
-    borderColor: COLORS.PRIMARY,
+    borderColor: themeColors.primary,
   },
   settingButtonText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.PRIMARY,
+    color: themeColors.primary,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
   },
   formatContainer: {
@@ -829,10 +931,10 @@ const styles = StyleSheet.create({
     gap: SPACING.MD,
   },
   culturalExamplesCard: {
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     borderRadius: BORDER_RADIUS.MD,
     padding: SPACING.MD,
-    shadowColor: COLORS.TEXT_PRIMARY,
+    shadowColor: themeColors.text_PRIMARY,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -844,12 +946,12 @@ const styles = StyleSheet.create({
   culturalExampleTitle: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginBottom: SPACING.XS,
   },
   culturalExampleText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
     marginBottom: SPACING.XS,
   },
 });

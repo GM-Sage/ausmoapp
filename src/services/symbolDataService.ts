@@ -5,6 +5,7 @@ import { Symbol } from '../types';
 export interface SymbolWithSound extends Symbol {
   soundUrl?: string;
   audioFile?: string;
+  ttsText?: string; // Override text for TTS pronunciation
 }
 
 export interface SymbolLibrary {
@@ -32,6 +33,12 @@ class SymbolDataService {
       SymbolDataService.instance = new SymbolDataService();
     }
     return SymbolDataService.instance;
+  }
+
+  // Initialize the service (call this after database is ready)
+  public async initialize(): Promise<void> {
+    // Load custom symbols from database
+    await this.loadCustomSymbols();
   }
 
   // Static methods that delegate to instance
@@ -236,6 +243,199 @@ class SymbolDataService {
         category: 'Communication',
         image: '🙏',
         keywords: ['thank you', 'thanks', 'grateful'],
+        isBuiltIn: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+
+      // Essential Communication Words
+      {
+        id: 'i',
+        name: 'I',
+        category: 'Essential Words',
+        image: '👤',
+        keywords: ['i', 'me', 'myself', 'self'],
+        ttsText: 'eye', // Override TTS pronunciation
+        isBuiltIn: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 'want',
+        name: 'Want',
+        category: 'Essential Words',
+        image: '🤲',
+        keywords: ['want', 'desire', 'need', 'would like'],
+        isBuiltIn: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 'need',
+        name: 'Need',
+        category: 'Essential Words',
+        image: '🆘',
+        keywords: ['need', 'require', 'must have', 'essential'],
+        isBuiltIn: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 'like',
+        name: 'Like',
+        category: 'Essential Words',
+        image: '❤️',
+        keywords: ['like', 'love', 'enjoy', 'prefer'],
+        isBuiltIn: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 'dont-like',
+        name: "Don't Like",
+        category: 'Essential Words',
+        image: '❌',
+        keywords: ['dont like', 'dislike', 'hate', 'not want'],
+        isBuiltIn: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 'go',
+        name: 'Go',
+        category: 'Essential Words',
+        image: '🚶',
+        keywords: ['go', 'walk', 'move', 'travel'],
+        isBuiltIn: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 'come',
+        name: 'Come',
+        category: 'Essential Words',
+        image: '👋',
+        keywords: ['come', 'arrive', 'approach', 'join'],
+        isBuiltIn: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 'big',
+        name: 'Big',
+        category: 'Essential Words',
+        image: '🔍',
+        keywords: ['big', 'large', 'huge', 'giant'],
+        isBuiltIn: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 'small',
+        name: 'Small',
+        category: 'Essential Words',
+        image: '🔬',
+        keywords: ['small', 'little', 'tiny', 'mini'],
+        isBuiltIn: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 'hot',
+        name: 'Hot',
+        category: 'Essential Words',
+        image: '🔥',
+        keywords: ['hot', 'warm', 'heat', 'burning'],
+        isBuiltIn: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 'cold',
+        name: 'Cold',
+        category: 'Essential Words',
+        image: '❄️',
+        keywords: ['cold', 'cool', 'freezing', 'chilly'],
+        isBuiltIn: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 'good',
+        name: 'Good',
+        category: 'Essential Words',
+        image: '👍',
+        keywords: ['good', 'great', 'nice', 'excellent'],
+        isBuiltIn: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 'bad',
+        name: 'Bad',
+        category: 'Essential Words',
+        image: '👎',
+        keywords: ['bad', 'terrible', 'awful', 'horrible'],
+        isBuiltIn: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 'fast',
+        name: 'Fast',
+        category: 'Essential Words',
+        image: '🏃',
+        keywords: ['fast', 'quick', 'rapid', 'speedy'],
+        isBuiltIn: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 'slow',
+        name: 'Slow',
+        category: 'Essential Words',
+        image: '🐌',
+        keywords: ['slow', 'sluggish', 'gradual', 'delayed'],
+        isBuiltIn: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 'up',
+        name: 'Up',
+        category: 'Essential Words',
+        image: '⬆️',
+        keywords: ['up', 'above', 'higher', 'rise'],
+        isBuiltIn: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 'down',
+        name: 'Down',
+        category: 'Essential Words',
+        image: '⬇️',
+        keywords: ['down', 'below', 'lower', 'fall'],
+        isBuiltIn: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 'in',
+        name: 'In',
+        category: 'Essential Words',
+        image: '📥',
+        keywords: ['in', 'inside', 'enter', 'within'],
+        isBuiltIn: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 'out',
+        name: 'Out',
+        category: 'Essential Words',
+        image: '📤',
+        keywords: ['out', 'outside', 'exit', 'leave'],
         isBuiltIn: true,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -1960,6 +2160,13 @@ class SymbolDataService {
   }
 
   public getAllSymbols(): SymbolWithSound[] {
+    console.log('getAllSymbols called. Total symbols:', this.symbols.length);
+    const customSymbols = this.symbols.filter(s => !s.isBuiltIn);
+    console.log(
+      'Custom symbols in getAllSymbols:',
+      customSymbols.length,
+      customSymbols.map(s => s.name)
+    );
     return [...this.symbols];
   }
 
@@ -1974,48 +2181,154 @@ class SymbolDataService {
 
     const searchTerm = query.toLowerCase().trim();
     const words = searchTerm.split(' ').filter(word => word.length > 0);
-    
-    return this.symbols.filter(symbol => {
-      const symbolText = `${symbol.name} ${symbol.keywords.join(' ')} ${symbol.category}`.toLowerCase();
-      
-      // Exact match gets highest priority
-      if (symbolText.includes(searchTerm)) {
-        return true;
-      }
-      
-      // All words must be found somewhere in the symbol
-      return words.every(word => symbolText.includes(word));
-    }).sort((a, b) => {
-      // Sort by relevance: exact matches first, then by name similarity
-      const aExact = a.name.toLowerCase().includes(searchTerm);
-      const bExact = b.name.toLowerCase().includes(searchTerm);
-      
-      if (aExact && !bExact) return -1;
-      if (!aExact && bExact) return 1;
-      
-      return a.name.localeCompare(b.name);
-    });
+
+    return this.symbols
+      .filter(symbol => {
+        const symbolText =
+          `${symbol.name} ${symbol.keywords.join(' ')} ${symbol.category}`.toLowerCase();
+
+        // Exact match gets highest priority
+        if (symbolText.includes(searchTerm)) {
+          return true;
+        }
+
+        // All words must be found somewhere in the symbol
+        return words.every(word => symbolText.includes(word));
+      })
+      .sort((a, b) => {
+        // Sort by relevance: exact matches first, then by name similarity
+        const aExact = a.name.toLowerCase().includes(searchTerm);
+        const bExact = b.name.toLowerCase().includes(searchTerm);
+
+        if (aExact && !bExact) return -1;
+        if (!aExact && bExact) return 1;
+
+        return a.name.localeCompare(b.name);
+      });
   }
 
   public getPopularSymbols(): SymbolWithSound[] {
     // Return the most commonly used symbols for AAC
     const popularIds = [
-      'hello', 'help', 'yes', 'no', 'more', 'done', 'please', 'thank-you', 'sorry',
-      'wait', 'stop', 'go', 'goodbye', 'good-morning', 'good-night',
-      'water', 'food', 'juice', 'cookie', 'pizza', 'ice-cream', 'apple', 'banana',
-      'happy', 'sad', 'excited', 'worried', 'angry', 'tired', 'hurt', 'calm',
-      'eat', 'drink', 'play', 'sleep', 'walk', 'run', 'jump', 'sit', 'stand',
-      'wash', 'brush-teeth', 'bath', 'read', 'write', 'draw', 'sing', 'dance',
-      'home', 'school', 'park', 'store', 'restaurant', 'library', 'hospital',
-      'mom', 'dad', 'brother', 'sister', 'grandma', 'grandpa', 'teacher', 'doctor', 'friend', 'baby',
-      'book', 'toy', 'phone', 'car', 'bus', 'train', 'airplane', 'bicycle',
-      'dog', 'cat', 'bird', 'elephant', 'lion', 'giraffe', 'monkey', 'penguin',
-      'red', 'blue', 'green', 'yellow', 'purple', 'pink', 'brown', 'gray',
-      'today', 'yesterday', 'tomorrow', 'weekend',
-      'sunny', 'rainy', 'cloudy', 'windy', 'snowy', 'stormy',
-      'circle', 'square', 'triangle', 'star', 'heart', 'diamond'
+      'hello',
+      'help',
+      'yes',
+      'no',
+      'more',
+      'done',
+      'please',
+      'thank-you',
+      'sorry',
+      'wait',
+      'stop',
+      'go',
+      'goodbye',
+      'good-morning',
+      'good-night',
+      'i',
+      'want',
+      'need',
+      'like',
+      'dont-like',
+      'come',
+      'big',
+      'small',
+      'hot',
+      'cold',
+      'good',
+      'bad',
+      'water',
+      'food',
+      'juice',
+      'cookie',
+      'pizza',
+      'ice-cream',
+      'apple',
+      'banana',
+      'happy',
+      'sad',
+      'excited',
+      'worried',
+      'angry',
+      'tired',
+      'hurt',
+      'calm',
+      'eat',
+      'drink',
+      'play',
+      'sleep',
+      'walk',
+      'run',
+      'jump',
+      'sit',
+      'stand',
+      'wash',
+      'brush-teeth',
+      'bath',
+      'read',
+      'write',
+      'draw',
+      'sing',
+      'dance',
+      'home',
+      'school',
+      'park',
+      'store',
+      'restaurant',
+      'library',
+      'hospital',
+      'mom',
+      'dad',
+      'brother',
+      'sister',
+      'grandma',
+      'grandpa',
+      'teacher',
+      'doctor',
+      'friend',
+      'baby',
+      'book',
+      'toy',
+      'phone',
+      'car',
+      'bus',
+      'train',
+      'airplane',
+      'bicycle',
+      'dog',
+      'cat',
+      'bird',
+      'elephant',
+      'lion',
+      'giraffe',
+      'monkey',
+      'penguin',
+      'red',
+      'blue',
+      'green',
+      'yellow',
+      'purple',
+      'pink',
+      'brown',
+      'gray',
+      'today',
+      'yesterday',
+      'tomorrow',
+      'weekend',
+      'sunny',
+      'rainy',
+      'cloudy',
+      'windy',
+      'snowy',
+      'stormy',
+      'circle',
+      'square',
+      'triangle',
+      'star',
+      'heart',
+      'diamond',
     ];
-    
+
     return popularIds
       .map(id => this.symbols.find(symbol => symbol.id === id))
       .filter(symbol => symbol !== undefined) as SymbolWithSound[];
@@ -2036,7 +2349,9 @@ class SymbolDataService {
         id: 'core-library',
         name: 'Core Library',
         description: 'Essential symbols for basic communication',
-        symbols: this.symbols.filter(s => s.category === 'Communication' || s.category === 'Greetings'),
+        symbols: this.symbols.filter(
+          s => s.category === 'Communication' || s.category === 'Greetings'
+        ),
         isPremium: false,
       },
       {
@@ -2085,24 +2400,55 @@ class SymbolDataService {
         id: 'basic-communication',
         name: 'Basic Communication',
         library: 'core-library',
-        symbols: this.symbols.filter(s => 
-          ['hello', 'help', 'yes', 'no', 'please', 'thank-you', 'sorry'].includes(s.id)
+        symbols: this.symbols.filter(s =>
+          [
+            'hello',
+            'help',
+            'yes',
+            'no',
+            'please',
+            'thank-you',
+            'sorry',
+            'i',
+            'want',
+            'need',
+            'like',
+            'dont-like',
+          ].includes(s.id)
         ),
       },
       {
         id: 'daily-activities',
         name: 'Daily Activities',
         library: 'actions-library',
-        symbols: this.symbols.filter(s => 
-          ['eat', 'drink', 'sleep', 'wash', 'brush-teeth', 'bath', 'read', 'write'].includes(s.id)
+        symbols: this.symbols.filter(s =>
+          [
+            'eat',
+            'drink',
+            'sleep',
+            'wash',
+            'brush-teeth',
+            'bath',
+            'read',
+            'write',
+          ].includes(s.id)
         ),
       },
       {
         id: 'family-people',
         name: 'Family & People',
         library: 'core-library',
-        symbols: this.symbols.filter(s => 
-          ['mom', 'dad', 'brother', 'sister', 'grandma', 'grandpa', 'teacher', 'friend'].includes(s.id)
+        symbols: this.symbols.filter(s =>
+          [
+            'mom',
+            'dad',
+            'brother',
+            'sister',
+            'grandma',
+            'grandpa',
+            'teacher',
+            'friend',
+          ].includes(s.id)
         ),
       },
     ];
@@ -2228,23 +2574,33 @@ class SymbolDataService {
   // Import/Export functionality
   public exportSymbols(format: 'json' | 'csv' = 'json'): string {
     if (format === 'csv') {
-      const headers = ['id', 'name', 'category', 'image', 'keywords', 'isBuiltIn'];
+      const headers = [
+        'id',
+        'name',
+        'category',
+        'image',
+        'keywords',
+        'isBuiltIn',
+      ];
       const rows = this.symbols.map(symbol => [
         symbol.id,
         symbol.name,
         symbol.category,
         symbol.image,
         symbol.keywords.join(';'),
-        symbol.isBuiltIn.toString()
+        symbol.isBuiltIn.toString(),
       ]);
-      
+
       return [headers, ...rows].map(row => row.join(',')).join('\n');
     }
-    
+
     return JSON.stringify(this.symbols, null, 2);
   }
 
-  public importSymbols(data: string, format: 'json' | 'csv' = 'json'): { success: boolean; imported: number; errors: string[] } {
+  public importSymbols(
+    data: string,
+    format: 'json' | 'csv' = 'json'
+  ): { success: boolean; imported: number; errors: string[] } {
     const errors: string[] = [];
     let imported = 0;
 
@@ -2252,7 +2608,7 @@ class SymbolDataService {
       if (format === 'csv') {
         const lines = data.split('\n');
         const headers = lines[0].split(',');
-        
+
         for (let i = 1; i < lines.length; i++) {
           const values = lines[i].split(',');
           if (values.length >= headers.length) {
@@ -2267,14 +2623,16 @@ class SymbolDataService {
                 createdAt: new Date(),
                 updatedAt: new Date(),
               };
-              
+
               // Check if symbol already exists
               if (!this.symbols.find(s => s.id === symbol.id)) {
                 this.symbols.push(symbol);
                 imported++;
               }
             } catch (error) {
-              errors.push(`Row ${i + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+              errors.push(
+                `Row ${i + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`
+              );
             }
           }
         }
@@ -2293,20 +2651,24 @@ class SymbolDataService {
                 createdAt: new Date(),
                 updatedAt: new Date(),
               };
-              
+
               // Check if symbol already exists
               if (!this.symbols.find(s => s.id === symbol.id)) {
                 this.symbols.push(symbol);
                 imported++;
               }
             } catch (error) {
-              errors.push(`Symbol ${symbolData.id || 'unknown'}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+              errors.push(
+                `Symbol ${symbolData.id || 'unknown'}: ${error instanceof Error ? error.message : 'Unknown error'}`
+              );
             }
           }
         }
       }
     } catch (error) {
-      errors.push(`Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      errors.push(
+        `Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
 
     return { success: errors.length === 0, imported, errors };
@@ -2323,24 +2685,27 @@ class SymbolDataService {
       if (filters.categories && filters.categories.length > 0) {
         if (!filters.categories.includes(symbol.category)) return false;
       }
-      
+
       if (filters.keywords && filters.keywords.length > 0) {
-        if (!filters.keywords.some(keyword => 
-          symbol.keywords.some(symbolKeyword => 
-            symbolKeyword.toLowerCase().includes(keyword.toLowerCase())
+        if (
+          !filters.keywords.some(keyword =>
+            symbol.keywords.some(symbolKeyword =>
+              symbolKeyword.toLowerCase().includes(keyword.toLowerCase())
+            )
           )
-        )) return false;
+        )
+          return false;
       }
-      
+
       if (filters.isBuiltIn !== undefined) {
         if (symbol.isBuiltIn !== filters.isBuiltIn) return false;
       }
-      
+
       if (filters.hasSound !== undefined) {
         const hasSound = !!(symbol.soundUrl || symbol.audioFile);
         if (hasSound !== filters.hasSound) return false;
       }
-      
+
       return true;
     });
   }
@@ -2360,9 +2725,10 @@ class SymbolDataService {
 
     this.symbols.forEach(symbol => {
       byCategory[symbol.category] = (byCategory[symbol.category] || 0) + 1;
-      
+
       if (symbol.soundUrl || symbol.audioFile) withSound++;
-      if (symbol.isBuiltIn) builtIn++; else custom++;
+      if (symbol.isBuiltIn) builtIn++;
+      else custom++;
     });
 
     return {
@@ -2372,6 +2738,105 @@ class SymbolDataService {
       builtIn,
       custom,
     };
+  }
+
+  // Load custom symbols from database
+  private async loadCustomSymbols(): Promise<void> {
+    try {
+      console.log('Starting to load custom symbols from database...');
+      const DatabaseService = (await import('./databaseService')).default;
+      const dbService = DatabaseService;
+
+      // Get all custom symbols (isBuiltIn = false)
+      const customSymbols = await dbService.getCustomSymbols();
+      console.log(
+        'Retrieved custom symbols from database:',
+        customSymbols.length,
+        customSymbols.map(s => s.name)
+      );
+
+      // Add custom symbols to the symbols array
+      customSymbols.forEach(symbol => {
+        const symbolWithSound: SymbolWithSound = {
+          ...symbol,
+          soundUrl: undefined,
+          audioFile: undefined,
+        };
+        this.symbols.push(symbolWithSound);
+        console.log('Added custom symbol to symbols array:', symbol.name);
+      });
+
+      console.log(
+        `Loaded ${customSymbols.length} custom symbols from database. Total symbols now: ${this.symbols.length}`
+      );
+    } catch (error) {
+      console.error('Error loading custom symbols from database:', error);
+    }
+  }
+
+  // Add custom symbol
+  public async addCustomSymbol(symbol: SymbolWithSound): Promise<void> {
+    try {
+      // Check if symbol with same ID already exists
+      const existingIndex = this.symbols.findIndex(s => s.id === symbol.id);
+      if (existingIndex >= 0) {
+        // Update existing symbol
+        this.symbols[existingIndex] = symbol;
+      } else {
+        // Add new symbol
+        this.symbols.push(symbol);
+      }
+
+      // Save to database
+      const DatabaseService = (await import('./databaseService')).default;
+      const dbService = DatabaseService;
+      await dbService.createSymbol(symbol);
+
+      // Update categories if new category is added
+      const currentCategories = this.getCategories();
+      if (!currentCategories.includes(symbol.category)) {
+        // Categories are dynamically generated, so we don't need to manually add them
+        // The getCategories() method will automatically include the new category
+      }
+
+      console.log(
+        `Custom symbol "${symbol.name}" added successfully and saved to database`
+      );
+    } catch (error) {
+      console.error('Error saving custom symbol to database:', error);
+      // Still add to memory even if database save fails
+      const existingIndex = this.symbols.findIndex(s => s.id === symbol.id);
+      if (existingIndex >= 0) {
+        this.symbols[existingIndex] = symbol;
+      } else {
+        this.symbols.push(symbol);
+      }
+      console.log(`Custom symbol "${symbol.name}" added to memory only`);
+    }
+  }
+
+  // Remove custom symbol
+  public removeCustomSymbol(symbolId: string): boolean {
+    const index = this.symbols.findIndex(s => s.id === symbolId);
+    if (index >= 0) {
+      const symbol = this.symbols[index];
+      this.symbols.splice(index, 1);
+
+      // Check if category is still used
+      const categoryStillUsed = this.symbols.some(
+        s => s.category === symbol.category
+      );
+      if (!categoryStillUsed && symbol.category !== 'All') {
+        const categoryIndex = this.categories.indexOf(symbol.category);
+        if (categoryIndex >= 0) {
+          this.categories.splice(categoryIndex, 1);
+        }
+      }
+
+      console.log(`Custom symbol "${symbol.name}" removed successfully`);
+      return true;
+    }
+    return false;
   }
 }
 

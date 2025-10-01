@@ -1,25 +1,27 @@
 // Book Editor Screen
 
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TextInput, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
   Alert,
   ScrollView,
   Switch,
-  FlatList
+  FlatList,
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 
 import { RootState } from '../../store';
 import { CommunicationBook } from '../../types';
-import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../../constants';
+import { TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../../constants';
 import DatabaseService from '../../services/databaseService';
 import SymbolDataService from '../../services/symbolDataService';
+import { useVisualSettings } from '../../contexts/VisualSettingsContext';
+import { getThemeColors } from '../../utils/themeUtils';
 
 interface BookEditorScreenProps {
   route?: {
@@ -30,12 +32,18 @@ interface BookEditorScreenProps {
   navigation?: any;
 }
 
-export default function BookEditorScreen({ route, navigation }: BookEditorScreenProps) {
+export default function BookEditorScreen({
+  route,
+  navigation,
+}: BookEditorScreenProps) {
   const currentUser = useSelector((state: RootState) => state.user.currentUser);
+  const { theme } = useVisualSettings();
+  const safeTheme = theme || 'light'; // Ensure theme is never undefined
+  const themeColors = getThemeColors(safeTheme);
   const [book, setBook] = useState<CommunicationBook | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  
+
   // Form fields
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -55,7 +63,7 @@ export default function BookEditorScreen({ route, navigation }: BookEditorScreen
 
   const loadBook = async () => {
     if (!bookId) return;
-    
+
     try {
       setIsLoading(true);
       const loadedBook = await DatabaseService.getBook(bookId);
@@ -88,16 +96,19 @@ export default function BookEditorScreen({ route, navigation }: BookEditorScreen
 
     try {
       setIsLoading(true);
-      
+
       // Create default pages for new books
       let pages = book?.pages || [];
       if (!bookId) {
         pages = createDefaultPages();
       }
-      
+
       const bookData: CommunicationBook = {
-        id: book?.id || `book-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id:
+          book?.id ||
+          `book-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         name: name.trim(),
+        title: name.trim(),
         description: description.trim() || undefined,
         category,
         userId: currentUser.id,
@@ -130,7 +141,7 @@ export default function BookEditorScreen({ route, navigation }: BookEditorScreen
 
   const createDefaultPages = () => {
     const popularSymbols = SymbolDataService.getPopularSymbols();
-    
+
     // Create main communication page
     const mainPage = {
       id: 'main-page',
@@ -151,11 +162,11 @@ export default function BookEditorScreen({ route, navigation }: BookEditorScreen
         image: symbol.image,
         ttsMessage: symbol.name,
         action: { type: 'speak' as const },
-        position: { 
-          row: Math.floor(index / 3), 
-          column: index % 3, 
-          width: 1, 
-          height: 1 
+        position: {
+          row: Math.floor(index / 3),
+          column: index % 3,
+          width: 1,
+          height: 1,
         },
         size: 'medium' as const,
         backgroundColor: '#FFFFFF',
@@ -177,7 +188,10 @@ export default function BookEditorScreen({ route, navigation }: BookEditorScreen
     // Create category pages
     const categories = ['Food & Drink', 'Feelings', 'Actions', 'Places'];
     const categoryPages = categories.map((cat, catIndex) => {
-      const categorySymbols = SymbolDataService.getSymbolsByCategory(cat).slice(0, 9);
+      const categorySymbols = SymbolDataService.getSymbolsByCategory(cat).slice(
+        0,
+        9
+      );
       return {
         id: `page-${cat.toLowerCase().replace(/\s+/g, '-')}`,
         bookId: '',
@@ -197,11 +211,11 @@ export default function BookEditorScreen({ route, navigation }: BookEditorScreen
           image: symbol.image,
           ttsMessage: symbol.name,
           action: { type: 'speak' as const },
-          position: { 
-            row: Math.floor(index / 3), 
-            column: index % 3, 
-            width: 1, 
-            height: 1 
+          position: {
+            row: Math.floor(index / 3),
+            column: index % 3,
+            width: 1,
+            height: 1,
           },
           size: 'medium' as const,
           backgroundColor: '#FFFFFF',
@@ -226,24 +240,24 @@ export default function BookEditorScreen({ route, navigation }: BookEditorScreen
 
   const getCategoryColor = (category: string): string => {
     const colorMap: { [key: string]: string } = {
-      'Greetings': '#FFD700',        // Yellow for prompts/questions
-      'Communication': '#32CD32',    // Green for positive actions
-      'Actions': '#FFD700',          // Yellow for prompts
-      'Food & Drink': '#FFD700',     // Yellow for prompts
-      'Feelings': '#FF6B6B',         // Red for negative/feelings
-      'Places': '#32CD32',           // Green for positive
-      'People': '#32CD32',           // Green for positive
-      'Objects': '#FFD700',          // Yellow for prompts
-      'Body': '#FFD700',             // Yellow for prompts
-      'Clothing': '#FFD700',         // Yellow for prompts
-      'Animals': '#FFD700',          // Yellow for prompts
-      'Colors': '#FFD700',           // Yellow for prompts
-      'Time': '#FFD700',             // Yellow for prompts
-      'Weather': '#FFD700',          // Yellow for prompts
-      'Transportation': '#FFD700',   // Yellow for prompts
-      'Shapes': '#FFD700',           // Yellow for prompts
-      'School': '#FFD700',           // Yellow for prompts
-      'Home': '#FFD700',             // Yellow for prompts
+      Greetings: '#FFD700', // Yellow for prompts/questions
+      Communication: '#32CD32', // Green for positive actions
+      Actions: '#FFD700', // Yellow for prompts
+      'Food & Drink': '#FFD700', // Yellow for prompts
+      Feelings: '#FF6B6B', // Red for negative/feelings
+      Places: '#32CD32', // Green for positive
+      People: '#32CD32', // Green for positive
+      Objects: '#FFD700', // Yellow for prompts
+      Body: '#FFD700', // Yellow for prompts
+      Clothing: '#FFD700', // Yellow for prompts
+      Animals: '#FFD700', // Yellow for prompts
+      Colors: '#FFD700', // Yellow for prompts
+      Time: '#FFD700', // Yellow for prompts
+      Weather: '#FFD700', // Yellow for prompts
+      Transportation: '#FFD700', // Yellow for prompts
+      Shapes: '#FFD700', // Yellow for prompts
+      School: '#FFD700', // Yellow for prompts
+      Home: '#FFD700', // Yellow for prompts
     };
     return colorMap[category] || '#FFD700';
   };
@@ -285,7 +299,7 @@ export default function BookEditorScreen({ route, navigation }: BookEditorScreen
     'Places',
     'People',
     'Actions',
-    'Custom'
+    'Custom',
   ];
 
   if (isLoading) {
@@ -299,14 +313,17 @@ export default function BookEditorScreen({ route, navigation }: BookEditorScreen
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation?.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={COLORS.SURFACE} />
+        <TouchableOpacity
+          onPress={() => navigation?.goBack()}
+          style={styles.backButton}
+        >
+          <Ionicons name="arrow-back" size={24} color={themeColors.surface} />
         </TouchableOpacity>
         <Text style={styles.title}>
           {bookId ? 'Edit Book' : 'Create New Book'}
         </Text>
         <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
-          <Ionicons name="checkmark" size={24} color={COLORS.SURFACE} />
+          <Ionicons name="checkmark" size={24} color={themeColors.surface} />
         </TouchableOpacity>
       </View>
 
@@ -339,19 +356,21 @@ export default function BookEditorScreen({ route, navigation }: BookEditorScreen
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Category</Text>
             <View style={styles.categoryContainer}>
-              {categories.map((cat) => (
+              {categories.map(cat => (
                 <TouchableOpacity
                   key={cat}
                   style={[
                     styles.categoryButton,
-                    category === cat && styles.categoryButtonActive
+                    category === cat && styles.categoryButtonActive,
                   ]}
                   onPress={() => isEditing && setCategory(cat)}
                 >
-                  <Text style={[
-                    styles.categoryButtonText,
-                    category === cat && styles.categoryButtonTextActive
-                  ]}>
+                  <Text
+                    style={[
+                      styles.categoryButtonText,
+                      category === cat && styles.categoryButtonTextActive,
+                    ]}
+                  >
                     {cat}
                   </Text>
                 </TouchableOpacity>
@@ -366,8 +385,13 @@ export default function BookEditorScreen({ route, navigation }: BookEditorScreen
                 value={isTemplate}
                 onValueChange={setIsTemplate}
                 disabled={!isEditing}
-                trackColor={{ false: COLORS.BORDER, true: COLORS.PRIMARY }}
-                thumbColor={isTemplate ? COLORS.SURFACE : COLORS.TEXT_SECONDARY}
+                trackColor={{
+                  false: themeColors.border,
+                  true: themeColors.primary,
+                }}
+                thumbColor={
+                  isTemplate ? themeColors.surface : themeColors.textSecondary
+                }
               />
             </View>
             <Text style={styles.switchDescription}>
@@ -382,8 +406,13 @@ export default function BookEditorScreen({ route, navigation }: BookEditorScreen
                 value={isShared}
                 onValueChange={setIsShared}
                 disabled={!isEditing}
-                trackColor={{ false: COLORS.BORDER, true: COLORS.PRIMARY }}
-                thumbColor={isShared ? COLORS.SURFACE : COLORS.TEXT_SECONDARY}
+                trackColor={{
+                  false: themeColors.border,
+                  true: themeColors.primary,
+                }}
+                thumbColor={
+                  isShared ? themeColors.surface : themeColors.textSecondary
+                }
               />
             </View>
             <Text style={styles.switchDescription}>
@@ -394,28 +423,40 @@ export default function BookEditorScreen({ route, navigation }: BookEditorScreen
           {/* Pages Section */}
           <View style={styles.inputGroup}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.label}>Pages ({book?.pages?.length || 0})</Text>
+              <Text style={styles.label}>
+                Pages ({book?.pages?.length || 0})
+              </Text>
               <TouchableOpacity
                 style={styles.addButton}
-                onPress={() => navigation?.navigate('PageEditor', { bookId: bookId || 'new' })}
+                onPress={() =>
+                  navigation?.navigate('PageEditor', {
+                    bookId: bookId || 'new',
+                  })
+                }
               >
-                <Ionicons name="add" size={20} color={COLORS.SURFACE} />
+                <Ionicons name="add" size={20} color={themeColors.surface} />
               </TouchableOpacity>
             </View>
-            
+
             {book?.pages && book.pages.length > 0 ? (
               <FlatList
                 data={book.pages}
                 renderItem={({ item }) => (
                   <TouchableOpacity
                     style={styles.pageItem}
-                    onPress={() => navigation?.navigate('PageEditor', { 
-                      pageId: item.id, 
-                      bookId: bookId || 'new' 
-                    })}
+                    onPress={() =>
+                      navigation?.navigate('PageEditor', {
+                        pageId: item.id,
+                        bookId: bookId || 'new',
+                      })
+                    }
                   >
                     <View style={styles.pageIcon}>
-                      <Ionicons name="document-text" size={24} color={COLORS.PRIMARY} />
+                      <Ionicons
+                        name="document-text"
+                        size={24}
+                        color={themeColors.primary}
+                      />
                     </View>
                     <View style={styles.pageInfo}>
                       <Text style={styles.pageName}>{item.name}</Text>
@@ -423,17 +464,27 @@ export default function BookEditorScreen({ route, navigation }: BookEditorScreen
                         {item.buttons?.length || 0} symbols • {item.type}
                       </Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={20} color={COLORS.TEXT_SECONDARY} />
+                    <Ionicons
+                      name="chevron-forward"
+                      size={20}
+                      color={themeColors.textSecondary}
+                    />
                   </TouchableOpacity>
                 )}
-                keyExtractor={(item) => item.id}
+                keyExtractor={item => item.id}
                 scrollEnabled={false}
               />
             ) : (
               <View style={styles.emptyPages}>
-                <Ionicons name="document-outline" size={48} color={COLORS.TEXT_SECONDARY} />
+                <Ionicons
+                  name="document-outline"
+                  size={48}
+                  color={themeColors.textSecondary}
+                />
                 <Text style={styles.emptyPagesText}>No pages yet</Text>
-                <Text style={styles.emptyPagesSubtext}>Tap + to add your first page</Text>
+                <Text style={styles.emptyPagesSubtext}>
+                  Tap + to add your first page
+                </Text>
               </View>
             )}
           </View>
@@ -443,7 +494,7 @@ export default function BookEditorScreen({ route, navigation }: BookEditorScreen
               style={styles.deleteButton}
               onPress={handleDelete}
             >
-              <Ionicons name="trash" size={20} color={COLORS.ERROR} />
+              <Ionicons name="trash" size={20} color={themeColors.error} />
               <Text style={styles.deleteButtonText}>Delete Book</Text>
             </TouchableOpacity>
           )}
@@ -456,23 +507,23 @@ export default function BookEditorScreen({ route, navigation }: BookEditorScreen
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: themeColors.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: themeColors.background,
   },
   loadingText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: COLORS.PRIMARY,
+    backgroundColor: themeColors.primary,
     paddingHorizontal: SPACING.MD,
     paddingVertical: SPACING.SM,
     paddingTop: 50,
@@ -483,7 +534,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: TYPOGRAPHY.FONT_SIZES.TITLE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.SURFACE,
+    color: themeColors.surface,
     flex: 1,
     textAlign: 'center',
   },
@@ -503,18 +554,18 @@ const styles = StyleSheet.create({
   label: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginBottom: SPACING.SM,
   },
   input: {
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     borderWidth: 1,
-    borderColor: COLORS.BORDER,
+    borderColor: themeColors.border,
     borderRadius: BORDER_RADIUS.MEDIUM,
     paddingHorizontal: SPACING.MD,
     paddingVertical: SPACING.SM,
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
   },
   textArea: {
     height: 80,
@@ -528,21 +579,21 @@ const styles = StyleSheet.create({
   categoryButton: {
     paddingHorizontal: SPACING.MD,
     paddingVertical: SPACING.SM,
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     borderWidth: 1,
-    borderColor: COLORS.BORDER,
+    borderColor: themeColors.border,
     borderRadius: BORDER_RADIUS.MEDIUM,
   },
   categoryButtonActive: {
-    backgroundColor: COLORS.PRIMARY,
-    borderColor: COLORS.PRIMARY,
+    backgroundColor: themeColors.primary,
+    borderColor: themeColors.primary,
   },
   categoryButtonText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
   },
   categoryButtonTextActive: {
-    color: COLORS.SURFACE,
+    color: themeColors.surface,
   },
   switchGroup: {
     marginBottom: SPACING.LG,
@@ -556,27 +607,27 @@ const styles = StyleSheet.create({
   switchLabel: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
   },
   switchDescription: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
     lineHeight: 18,
   },
   deleteButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     borderWidth: 1,
-    borderColor: COLORS.ERROR,
+    borderColor: themeColors.error,
     borderRadius: BORDER_RADIUS.MEDIUM,
     paddingVertical: SPACING.MD,
     marginTop: SPACING.LG,
   },
   deleteButtonText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.ERROR,
+    color: themeColors.error,
     marginLeft: SPACING.SM,
   },
   sectionHeader: {
@@ -586,7 +637,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.SM,
   },
   addButton: {
-    backgroundColor: COLORS.PRIMARY,
+    backgroundColor: themeColors.primary,
     width: 32,
     height: 32,
     borderRadius: 16,
@@ -596,18 +647,18 @@ const styles = StyleSheet.create({
   pageItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     borderRadius: BORDER_RADIUS.MEDIUM,
     padding: SPACING.MD,
     marginBottom: SPACING.SM,
     borderWidth: 1,
-    borderColor: COLORS.BORDER,
+    borderColor: themeColors.border,
   },
   pageIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: COLORS.BACKGROUND_LIGHT,
+    backgroundColor: themeColors.background_LIGHT,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: SPACING.MD,
@@ -618,30 +669,30 @@ const styles = StyleSheet.create({
   pageName: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginBottom: SPACING.XS,
   },
   pageDetails: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
   emptyPages: {
     alignItems: 'center',
     paddingVertical: SPACING.XL,
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     borderRadius: BORDER_RADIUS.MEDIUM,
     borderWidth: 1,
-    borderColor: COLORS.BORDER,
+    borderColor: themeColors.border,
   },
   emptyPagesText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginTop: SPACING.SM,
   },
   emptyPagesSubtext: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
     marginTop: SPACING.XS,
   },
 });

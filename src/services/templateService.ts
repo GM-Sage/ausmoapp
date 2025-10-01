@@ -1,7 +1,12 @@
 // Template Service for Ausmo AAC App
 // Provides pre-made communication boards and templates
 
-import { CommunicationBook, CommunicationPage, CommunicationButton, ButtonAction } from '../types';
+import {
+  CommunicationBook,
+  CommunicationPage,
+  CommunicationButton,
+  ButtonAction,
+} from '../types';
 
 export interface Template {
   id: string;
@@ -42,6 +47,30 @@ export interface TemplateSearchOptions {
   searchTerm?: string;
 }
 
+export interface TemplateSharingOptions {
+  method: 'email' | 'airdrop' | 'wifi' | 'cloud' | 'pdf';
+  recipients?: string[];
+  includeImages: boolean;
+  includeAudio: boolean;
+  compressData: boolean;
+  password?: string;
+}
+
+export interface TemplateGalleryItem {
+  id: string;
+  name: string;
+  description: string;
+  author: string;
+  category: string;
+  thumbnail: string;
+  downloadCount: number;
+  rating: number;
+  isFree: boolean;
+  tags: string[];
+  createdAt: Date;
+  bookData: CommunicationBook;
+}
+
 class TemplateService {
   private static instance: TemplateService;
   private templates: Template[] = [];
@@ -74,31 +103,42 @@ class TemplateService {
     let results = [...this.templates];
 
     if (options.category) {
-      results = results.filter(template => template.category === options.category);
+      results = results.filter(
+        template => template.category === options.category
+      );
     }
 
     if (options.difficulty) {
-      results = results.filter(template => template.difficulty === options.difficulty);
+      results = results.filter(
+        template => template.difficulty === options.difficulty
+      );
     }
 
     if (options.ageRange) {
-      results = results.filter(template => template.ageRange === options.ageRange);
+      results = results.filter(
+        template => template.ageRange === options.ageRange
+      );
     }
 
     if (options.language) {
-      results = results.filter(template => template.language === options.language);
+      results = results.filter(
+        template => template.language === options.language
+      );
     }
 
     if (options.isPremium !== undefined) {
-      results = results.filter(template => template.isPremium === options.isPremium);
+      results = results.filter(
+        template => template.isPremium === options.isPremium
+      );
     }
 
     if (options.searchTerm) {
       const searchTerm = options.searchTerm.toLowerCase();
-      results = results.filter(template => 
-        template.name.toLowerCase().includes(searchTerm) ||
-        template.description.toLowerCase().includes(searchTerm) ||
-        template.tags.some(tag => tag.toLowerCase().includes(searchTerm))
+      results = results.filter(
+        template =>
+          template.name.toLowerCase().includes(searchTerm) ||
+          template.description.toLowerCase().includes(searchTerm) ||
+          template.tags.some(tag => tag.toLowerCase().includes(searchTerm))
       );
     }
 
@@ -429,11 +469,15 @@ class TemplateService {
       this.createButton('yes', 'yes', 'yes', { type: 'speak' }),
       this.createButton('no', 'no', 'no', { type: 'speak' }),
       this.createButton('please', 'please', 'please', { type: 'speak' }),
-      this.createButton('thank you', 'thank you', 'thank you', { type: 'speak' }),
+      this.createButton('thank you', 'thank you', 'thank you', {
+        type: 'speak',
+      }),
       this.createButton('good', 'good', 'good', { type: 'speak' }),
       this.createButton('bad', 'bad', 'bad', { type: 'speak' }),
       this.createButton('like', 'like', 'like', { type: 'speak' }),
-      this.createButton('don\'t like', 'don\'t like', 'don\'t like', { type: 'speak' }),
+      this.createButton("don't like", "don't like", "don't like", {
+        type: 'speak',
+      }),
       this.createButton('go', 'go', 'go', { type: 'speak' }),
       this.createButton('stop', 'stop', 'stop', { type: 'speak' }),
       this.createButton('eat', 'eat', 'eat', { type: 'speak' }),
@@ -450,10 +494,11 @@ class TemplateService {
     ];
 
     const page = this.createPage('Core 50 Words', 'standard', 25, buttons);
-    
+
     return {
       id: 'core-50-words-book',
       name: 'Core 50 Words',
+      title: 'Core 50 Words',
       description: 'The 50 most essential words for communication',
       category: 'core-vocabulary',
       userId: 'template',
@@ -472,10 +517,11 @@ class TemplateService {
     ];
 
     const page = this.createPage('Core 100 Words', 'standard', 36, buttons);
-    
+
     return {
       id: 'core-100-words-book',
       name: 'Core 100 Words',
+      title: 'Core 100 Words',
       description: 'Extended core vocabulary with 100 essential words',
       category: 'core-vocabulary',
       userId: 'template',
@@ -493,21 +539,39 @@ class TemplateService {
       this.createButton('Hi', 'Hi', 'Hi', { type: 'speak' }),
       this.createButton('Goodbye', 'Goodbye', 'Goodbye', { type: 'speak' }),
       this.createButton('Bye', 'Bye', 'Bye', { type: 'speak' }),
-      this.createButton('Good morning', 'Good morning', 'Good morning', { type: 'speak' }),
-      this.createButton('Good afternoon', 'Good afternoon', 'Good afternoon', { type: 'speak' }),
-      this.createButton('Good evening', 'Good evening', 'Good evening', { type: 'speak' }),
-      this.createButton('Good night', 'Good night', 'Good night', { type: 'speak' }),
-      this.createButton('How are you?', 'How are you?', 'How are you?', { type: 'speak' }),
-      this.createButton('I\'m fine', 'I\'m fine', 'I\'m fine', { type: 'speak' }),
-      this.createButton('Nice to meet you', 'Nice to meet you', 'Nice to meet you', { type: 'speak' }),
-      this.createButton('See you later', 'See you later', 'See you later', { type: 'speak' }),
+      this.createButton('Good morning', 'Good morning', 'Good morning', {
+        type: 'speak',
+      }),
+      this.createButton('Good afternoon', 'Good afternoon', 'Good afternoon', {
+        type: 'speak',
+      }),
+      this.createButton('Good evening', 'Good evening', 'Good evening', {
+        type: 'speak',
+      }),
+      this.createButton('Good night', 'Good night', 'Good night', {
+        type: 'speak',
+      }),
+      this.createButton('How are you?', 'How are you?', 'How are you?', {
+        type: 'speak',
+      }),
+      this.createButton("I'm fine", "I'm fine", "I'm fine", { type: 'speak' }),
+      this.createButton(
+        'Nice to meet you',
+        'Nice to meet you',
+        'Nice to meet you',
+        { type: 'speak' }
+      ),
+      this.createButton('See you later', 'See you later', 'See you later', {
+        type: 'speak',
+      }),
     ];
 
     const page = this.createPage('Basic Greetings', 'standard', 16, buttons);
-    
+
     return {
       id: 'basic-greetings-book',
       name: 'Basic Greetings',
+      title: 'Basic Greetings',
       description: 'Essential greetings and social interactions',
       category: 'greetings',
       userId: 'template',
@@ -540,10 +604,11 @@ class TemplateService {
     ];
 
     const page = this.createPage('Mealtime Basics', 'standard', 16, buttons);
-    
+
     return {
       id: 'mealtime-basics-book',
       name: 'Mealtime Basics',
+      title: 'Mealtime Basics',
       description: 'Essential food and drink communication',
       category: 'food-drink',
       userId: 'template',
@@ -568,18 +633,26 @@ class TemplateService {
       this.createButton('teacher', 'teacher', 'teacher', { type: 'speak' }),
       this.createButton('student', 'student', 'student', { type: 'speak' }),
       this.createButton('friend', 'friend', 'friend', { type: 'speak' }),
-      this.createButton('playground', 'playground', 'playground', { type: 'speak' }),
+      this.createButton('playground', 'playground', 'playground', {
+        type: 'speak',
+      }),
       this.createButton('lunch', 'lunch', 'lunch', { type: 'speak' }),
       this.createButton('recess', 'recess', 'recess', { type: 'speak' }),
       this.createButton('bus', 'bus', 'bus', { type: 'speak' }),
       this.createButton('home', 'home', 'home', { type: 'speak' }),
     ];
 
-    const page = this.createPage('Classroom Essentials', 'standard', 16, buttons);
-    
+    const page = this.createPage(
+      'Classroom Essentials',
+      'standard',
+      16,
+      buttons
+    );
+
     return {
       id: 'classroom-essentials-book',
       name: 'Classroom Essentials',
+      title: 'Classroom Essentials',
       description: 'Essential communication for school and learning',
       category: 'school',
       userId: 'template',
@@ -601,17 +674,22 @@ class TemplateService {
       this.createButton('doctor', 'doctor', 'doctor', { type: 'speak' }),
       this.createButton('nurse', 'nurse', 'nurse', { type: 'speak' }),
       this.createButton('hospital', 'hospital', 'hospital', { type: 'speak' }),
-      this.createButton('ambulance', 'ambulance', 'ambulance', { type: 'speak' }),
-      this.createButton('emergency', 'emergency', 'emergency', { type: 'speak' }),
+      this.createButton('ambulance', 'ambulance', 'ambulance', {
+        type: 'speak',
+      }),
+      this.createButton('emergency', 'emergency', 'emergency', {
+        type: 'speak',
+      }),
       this.createButton('help', 'help', 'help', { type: 'speak' }),
       this.createButton('911', '911', '911', { type: 'speak' }),
     ];
 
     const page = this.createPage('Medical Basics', 'standard', 16, buttons);
-    
+
     return {
       id: 'medical-basics-book',
       name: 'Medical Basics',
+      title: 'Medical Basics',
       description: 'Essential medical and health communication',
       category: 'medical',
       userId: 'template',
@@ -637,11 +715,17 @@ class TemplateService {
       this.createButton('Back', '', '⬅️', { type: 'back' }),
     ];
 
-    const page = this.createPage('Express Sentence Builder', 'express', 9, buttons);
-    
+    const page = this.createPage(
+      'Express Sentence Builder',
+      'express',
+      9,
+      buttons
+    );
+
     return {
       id: 'express-sentence-builder-book',
       name: 'Express Sentence Builder',
+      title: 'Express Sentence Builder',
       description: 'Build sentences word by word with speech bar',
       category: 'express',
       userId: 'template',
@@ -667,10 +751,11 @@ class TemplateService {
     ];
 
     const page = this.createPage('Express Basic Needs', 'express', 9, buttons);
-    
+
     return {
       id: 'express-basic-needs-book',
       name: 'Express Basic Needs',
+      title: 'Express Basic Needs',
       description: 'Express basic needs and wants with sentence building',
       category: 'express',
       userId: 'template',
@@ -685,7 +770,9 @@ class TemplateService {
   private createExpressSocialCommunicationBook(): CommunicationBook {
     const buttons = [
       this.createButton('Hello', 'Hello', '👋', { type: 'speak' }),
-      this.createButton('How are you?', 'How are you?', '😊', { type: 'speak' }),
+      this.createButton('How are you?', 'How are you?', '😊', {
+        type: 'speak',
+      }),
       this.createButton('I am', 'I am', '👤', { type: 'speak' }),
       this.createButton('happy', 'happy', '😊', { type: 'speak' }),
       this.createButton('sad', 'sad', '😢', { type: 'speak' }),
@@ -695,11 +782,17 @@ class TemplateService {
       this.createButton('Back', '', '⬅️', { type: 'back' }),
     ];
 
-    const page = this.createPage('Express Social Communication', 'express', 9, buttons);
-    
+    const page = this.createPage(
+      'Express Social Communication',
+      'express',
+      9,
+      buttons
+    );
+
     return {
       id: 'express-social-communication-book',
       name: 'Express Social Communication',
+      title: 'Express Social Communication',
       description: 'Build social sentences and conversations',
       category: 'express',
       userId: 'template',
@@ -711,11 +804,168 @@ class TemplateService {
     };
   }
 
+  // Template Sharing Methods
+  async shareTemplate(
+    templateId: string,
+    options: TemplateSharingOptions
+  ): Promise<boolean> {
+    try {
+      const template = this.templates.find(t => t.id === templateId);
+      if (!template) {
+        throw new Error('Template not found');
+      }
+
+      switch (options.method) {
+        case 'email':
+          return await this.shareViaEmail(template, options);
+        case 'airdrop':
+          return await this.shareViaAirDrop(template, options);
+        case 'wifi':
+          return await this.shareViaWiFi(template, options);
+        case 'cloud':
+          return await this.shareViaCloud(template, options);
+        case 'pdf':
+          return await this.exportAsPDF(template, options);
+        default:
+          throw new Error('Unsupported sharing method');
+      }
+    } catch (error) {
+      console.error('Error sharing template:', error);
+      return false;
+    }
+  }
+
+  private async shareViaEmail(
+    template: Template,
+    options: TemplateSharingOptions
+  ): Promise<boolean> {
+    // Implementation for email sharing
+    console.log('Sharing template via email:', template.name);
+    // This would integrate with expo-mail-composer
+    return true;
+  }
+
+  private async shareViaAirDrop(
+    template: Template,
+    options: TemplateSharingOptions
+  ): Promise<boolean> {
+    // Implementation for AirDrop sharing (iOS only)
+    console.log('Sharing template via AirDrop:', template.name);
+    // This would integrate with expo-sharing
+    return true;
+  }
+
+  private async shareViaWiFi(
+    template: Template,
+    options: TemplateSharingOptions
+  ): Promise<boolean> {
+    // Implementation for WiFi broadcast sharing
+    console.log('Sharing template via WiFi broadcast:', template.name);
+    // This would create a local server for sharing
+    return true;
+  }
+
+  private async shareViaCloud(
+    template: Template,
+    options: TemplateSharingOptions
+  ): Promise<boolean> {
+    // Implementation for cloud sharing
+    console.log('Sharing template via cloud:', template.name);
+    // This would upload to cloud storage
+    return true;
+  }
+
+  private async exportAsPDF(
+    template: Template,
+    options: TemplateSharingOptions
+  ): Promise<boolean> {
+    // Implementation for PDF export
+    console.log('Exporting template as PDF:', template.name);
+    // This would generate PDF pages of the communication book
+    return true;
+  }
+
+  // Template Gallery Methods
+  async getTemplateGallery(): Promise<TemplateGalleryItem[]> {
+    // This would fetch from an online gallery
+    return [
+      {
+        id: 'gallery-1',
+        name: 'Core Words Starter',
+        description: 'Essential core words for beginning communicators',
+        author: 'AAC Specialist',
+        category: 'core-words',
+        thumbnail: '📚',
+        downloadCount: 1250,
+        rating: 4.8,
+        isFree: true,
+        tags: ['core-words', 'beginner', 'essential'],
+        createdAt: new Date('2024-01-01'),
+        bookData: this.createCoreWordsBook(),
+      },
+      {
+        id: 'gallery-2',
+        name: 'Daily Activities',
+        description: 'Common daily activities and routines',
+        author: 'Speech Therapist',
+        category: 'activities',
+        thumbnail: '🏠',
+        downloadCount: 890,
+        rating: 4.6,
+        isFree: true,
+        tags: ['activities', 'daily', 'routines'],
+        createdAt: new Date('2024-01-15'),
+        bookData: this.createDailyActivitiesBook(),
+      },
+    ];
+  }
+
+  async downloadTemplateFromGallery(
+    galleryItemId: string
+  ): Promise<CommunicationBook | null> {
+    try {
+      const gallery = await this.getTemplateGallery();
+      const item = gallery.find(g => g.id === galleryItemId);
+      if (!item) {
+        throw new Error('Gallery item not found');
+      }
+
+      // Increment download count
+      // This would update the online gallery
+      console.log('Downloading template from gallery:', item.name);
+
+      return item.bookData;
+    } catch (error) {
+      console.error('Error downloading template from gallery:', error);
+      return null;
+    }
+  }
+
+  async uploadTemplateToGallery(
+    book: CommunicationBook,
+    metadata: {
+      name: string;
+      description: string;
+      category: string;
+      tags: string[];
+      isFree: boolean;
+    }
+  ): Promise<boolean> {
+    try {
+      console.log('Uploading template to gallery:', metadata.name);
+      // This would upload to the online gallery
+      return true;
+    } catch (error) {
+      console.error('Error uploading template to gallery:', error);
+      return false;
+    }
+  }
+
   // Helper methods
   private createButton(
-    text: string, 
-    ttsMessage: string, 
-    image: string, 
+    text: string,
+    ttsMessage: string,
+    image: string,
     action: ButtonAction
   ): CommunicationButton {
     return {
@@ -740,9 +990,9 @@ class TemplateService {
   }
 
   private createPage(
-    name: string, 
-    type: 'standard' | 'express' | 'visual-scene' | 'keyboard', 
-    gridSize: number, 
+    name: string,
+    type: 'standard' | 'express' | 'visual-scene' | 'keyboard',
+    gridSize: number,
     buttons: CommunicationButton[]
   ): CommunicationPage {
     return {

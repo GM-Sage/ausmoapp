@@ -15,23 +15,30 @@ import { useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 
 import { RootState } from '../../store';
-import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../../constants';
-import OnboardingService, { 
-  OnboardingStep, 
-  OnboardingProgress, 
-  Tutorial 
+import { TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../../constants';
+import { getThemeColors } from '../../utils/themeUtils';
+import { useVisualSettings } from '../../contexts/VisualSettingsContext';
+import OnboardingService, {
+  OnboardingStep,
+  OnboardingProgress,
+  Tutorial,
 } from '../../services/onboardingService';
 
 const { width, height } = Dimensions.get('window');
 
 export default function OnboardingScreen() {
+  const { theme } = useVisualSettings();
+  const safeTheme = theme || 'light'; // Ensure theme is never undefined
+  const themeColors = getThemeColors(safeTheme);
   const currentUser = useSelector((state: RootState) => state.user.currentUser);
   const [onboardingService] = useState(() => OnboardingService.getInstance());
   const [currentStep, setCurrentStep] = useState<OnboardingStep | null>(null);
   const [progress, setProgress] = useState<OnboardingProgress | null>(null);
   const [tutorials, setTutorials] = useState<Tutorial[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedTab, setSelectedTab] = useState<'onboarding' | 'tutorials' | 'progress'>('onboarding');
+  const [selectedTab, setSelectedTab] = useState<
+    'onboarding' | 'tutorials' | 'progress'
+  >('onboarding');
 
   useEffect(() => {
     if (currentUser) {
@@ -45,13 +52,13 @@ export default function OnboardingScreen() {
     try {
       setIsLoading(true);
       await onboardingService.initialize(currentUser);
-      
+
       const [currentStepData, progressData, tutorialsData] = await Promise.all([
         onboardingService.getCurrentStep(),
         onboardingService.getOnboardingProgress(),
         onboardingService.getTutorials(),
       ]);
-      
+
       setCurrentStep(currentStepData);
       setProgress(progressData);
       setTutorials(tutorialsData);
@@ -116,13 +123,16 @@ export default function OnboardingScreen() {
     if (!progress) {
       return (
         <View style={styles.emptyState}>
-          <Ionicons name="rocket" size={64} color={COLORS.PRIMARY} />
+          <Ionicons name="rocket" size={64} color={themeColors.primary} />
           <Text style={styles.emptyStateTitle}>Welcome to Ausmo!</Text>
           <Text style={styles.emptyStateText}>
-            Let's get you started with your AAC communication journey. 
-            Our guided onboarding will help you learn the basics.
+            Let's get you started with your AAC communication journey. Our
+            guided onboarding will help you learn the basics.
           </Text>
-          <TouchableOpacity style={styles.startButton} onPress={handleStartOnboarding}>
+          <TouchableOpacity
+            style={styles.startButton}
+            onPress={handleStartOnboarding}
+          >
             <Text style={styles.startButtonText}>Start Onboarding</Text>
           </TouchableOpacity>
         </View>
@@ -132,11 +142,15 @@ export default function OnboardingScreen() {
     if (!currentStep) {
       return (
         <View style={styles.emptyState}>
-          <Ionicons name="checkmark-circle" size={64} color={COLORS.SUCCESS} />
+          <Ionicons
+            name="checkmark-circle"
+            size={64}
+            color={themeColors.success}
+          />
           <Text style={styles.emptyStateTitle}>Onboarding Complete!</Text>
           <Text style={styles.emptyStateText}>
-            Congratulations! You've completed the onboarding process. 
-            You're now ready to start communicating with Ausmo.
+            Congratulations! You've completed the onboarding process. You're now
+            ready to start communicating with Ausmo.
           </Text>
         </View>
       );
@@ -148,7 +162,9 @@ export default function OnboardingScreen() {
         <View style={styles.progressHeader}>
           <View style={styles.progressInfo}>
             <Text style={styles.progressTitle}>{currentStep.title}</Text>
-            <Text style={styles.progressDescription}>{currentStep.description}</Text>
+            <Text style={styles.progressDescription}>
+              {currentStep.description}
+            </Text>
           </View>
           <View style={styles.progressCircle}>
             <Text style={styles.progressText}>{progress.progress}%</Text>
@@ -157,11 +173,8 @@ export default function OnboardingScreen() {
 
         {/* Progress Bar */}
         <View style={styles.progressBar}>
-          <View 
-            style={[
-              styles.progressBarFill, 
-              { width: `${progress.progress}%` }
-            ]} 
+          <View
+            style={[styles.progressBarFill, { width: `${progress.progress}%` }]}
           />
         </View>
 
@@ -169,16 +182,22 @@ export default function OnboardingScreen() {
         <View style={styles.stepContent}>
           <View style={styles.stepHeader}>
             <View style={styles.stepIcon}>
-              <Ionicons 
+              <Ionicons
                 name={
-                  currentStep.type === 'welcome' ? 'home' :
-                  currentStep.type === 'setup' ? 'person' :
-                  currentStep.type === 'demo' ? 'play' :
-                  currentStep.type === 'tutorial' ? 'book' :
-                  currentStep.type === 'completion' ? 'checkmark-circle' : 'help'
-                } 
-                size={32} 
-                color={COLORS.PRIMARY} 
+                  currentStep.type === 'welcome'
+                    ? 'home'
+                    : currentStep.type === 'setup'
+                      ? 'person'
+                      : currentStep.type === 'demo'
+                        ? 'play'
+                        : currentStep.type === 'tutorial'
+                          ? 'book'
+                          : currentStep.type === 'completion'
+                            ? 'checkmark-circle'
+                            : 'help'
+                }
+                size={32}
+                color={themeColors.primary}
               />
             </View>
             <View style={styles.stepInfo}>
@@ -193,18 +212,24 @@ export default function OnboardingScreen() {
 
           <View style={styles.stepActions}>
             <Text style={styles.actionsTitle}>What you'll do:</Text>
-            {currentStep.actions.map((action) => (
+            {currentStep.actions.map(action => (
               <View key={action.id} style={styles.actionItem}>
-                <Ionicons 
+                <Ionicons
                   name={
-                    action.type === 'tap' ? 'hand-left' :
-                    action.type === 'swipe' ? 'swap-horizontal' :
-                    action.type === 'speak' ? 'volume-high' :
-                    action.type === 'navigate' ? 'navigate' :
-                    action.type === 'complete' ? 'checkmark' : 'help'
-                  } 
-                  size={16} 
-                  color={COLORS.TEXT_SECONDARY} 
+                    action.type === 'tap'
+                      ? 'hand-left'
+                      : action.type === 'swipe'
+                        ? 'swap-horizontal'
+                        : action.type === 'speak'
+                          ? 'volume-high'
+                          : action.type === 'navigate'
+                            ? 'navigate'
+                            : action.type === 'complete'
+                              ? 'checkmark'
+                              : 'help'
+                  }
+                  size={16}
+                  color={themeColors.textSecondary}
                 />
                 <Text style={styles.actionText}>{action.description}</Text>
               </View>
@@ -218,17 +243,23 @@ export default function OnboardingScreen() {
             style={[styles.actionButton, styles.completeButton]}
             onPress={() => handleCompleteStep(currentStep.id)}
           >
-            <Ionicons name="checkmark" size={20} color={COLORS.SURFACE} />
+            <Ionicons name="checkmark" size={20} color={themeColors.surface} />
             <Text style={styles.actionButtonText}>Complete Step</Text>
           </TouchableOpacity>
-          
+
           {currentStep.isRequired === false && (
             <TouchableOpacity
               style={[styles.actionButton, styles.skipButton]}
               onPress={() => handleSkipStep(currentStep.id)}
             >
-              <Ionicons name="arrow-forward" size={20} color={COLORS.TEXT_SECONDARY} />
-              <Text style={[styles.actionButtonText, styles.skipButtonText]}>Skip</Text>
+              <Ionicons
+                name="arrow-forward"
+                size={20}
+                color={themeColors.textSecondary}
+              />
+              <Text style={[styles.actionButtonText, styles.skipButtonText]}>
+                Skip
+              </Text>
             </TouchableOpacity>
           )}
         </View>
@@ -248,19 +279,25 @@ export default function OnboardingScreen() {
     return (
       <View style={styles.tutorialsContainer}>
         <Text style={styles.sectionTitle}>Interactive Tutorials</Text>
-        
-        {categories.map((category) => {
-          const categoryTutorials = tutorials.filter(t => t.category === category.key);
+
+        {categories.map(category => {
+          const categoryTutorials = tutorials.filter(
+            t => t.category === category.key
+          );
           if (categoryTutorials.length === 0) return null;
 
           return (
             <View key={category.key} style={styles.categorySection}>
               <View style={styles.categoryHeader}>
-                <Ionicons name={category.icon as any} size={24} color={COLORS.PRIMARY} />
+                <Ionicons
+                  name={category.icon as any}
+                  size={24}
+                  color={themeColors.primary}
+                />
                 <Text style={styles.categoryTitle}>{category.label}</Text>
               </View>
-              
-              {categoryTutorials.map((tutorial) => (
+
+              {categoryTutorials.map(tutorial => (
                 <TouchableOpacity
                   key={tutorial.id}
                   style={styles.tutorialCard}
@@ -269,40 +306,62 @@ export default function OnboardingScreen() {
                   <View style={styles.tutorialHeader}>
                     <View style={styles.tutorialInfo}>
                       <Text style={styles.tutorialName}>{tutorial.title}</Text>
-                      <Text style={styles.tutorialDescription}>{tutorial.description}</Text>
+                      <Text style={styles.tutorialDescription}>
+                        {tutorial.description}
+                      </Text>
                     </View>
                     <View style={styles.tutorialMeta}>
-                      <View style={[
-                        styles.difficultyBadge,
-                        { backgroundColor: 
-                          tutorial.difficulty === 'beginner' ? COLORS.SUCCESS :
-                          tutorial.difficulty === 'intermediate' ? COLORS.WARNING : COLORS.ERROR
-                        }
-                      ]}>
-                        <Text style={styles.difficultyText}>{tutorial.difficulty}</Text>
+                      <View
+                        style={[
+                          styles.difficultyBadge,
+                          {
+                            backgroundColor:
+                              tutorial.difficulty === 'beginner'
+                                ? themeColors.success
+                                : tutorial.difficulty === 'intermediate'
+                                  ? themeColors.warning
+                                  : themeColors.error,
+                          },
+                        ]}
+                      >
+                        <Text style={styles.difficultyText}>
+                          {tutorial.difficulty}
+                        </Text>
                       </View>
                       <View style={styles.timeBadge}>
-                        <Ionicons name="time" size={12} color={COLORS.TEXT_SECONDARY} />
-                        <Text style={styles.timeText}>{tutorial.estimatedTime}m</Text>
+                        <Ionicons
+                          name="time"
+                          size={12}
+                          color={themeColors.textSecondary}
+                        />
+                        <Text style={styles.timeText}>
+                          {tutorial.estimatedTime}m
+                        </Text>
                       </View>
                     </View>
                   </View>
-                  
+
                   <View style={styles.tutorialProgress}>
                     <View style={styles.progressBar}>
-                      <View 
+                      <View
                         style={[
-                          styles.progressBarFill, 
-                          { width: `${tutorial.progress}%` }
-                        ]} 
+                          styles.progressBarFill,
+                          { width: `${tutorial.progress}%` },
+                        ]}
                       />
                     </View>
-                    <Text style={styles.progressText}>{tutorial.progress}%</Text>
+                    <Text style={styles.progressText}>
+                      {tutorial.progress}%
+                    </Text>
                   </View>
-                  
+
                   {tutorial.isCompleted && (
                     <View style={styles.completedBadge}>
-                      <Ionicons name="checkmark-circle" size={16} color={COLORS.SUCCESS} />
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={16}
+                        color={themeColors.success}
+                      />
                       <Text style={styles.completedText}>Completed</Text>
                     </View>
                   )}
@@ -319,7 +378,11 @@ export default function OnboardingScreen() {
     if (!progress) {
       return (
         <View style={styles.emptyState}>
-          <Ionicons name="bar-chart" size={48} color={COLORS.TEXT_SECONDARY} />
+          <Ionicons
+            name="bar-chart"
+            size={48}
+            color={themeColors.textSecondary}
+          />
           <Text style={styles.emptyStateTitle}>No Progress Yet</Text>
           <Text style={styles.emptyStateText}>
             Start the onboarding process to track your progress.
@@ -331,28 +394,34 @@ export default function OnboardingScreen() {
     return (
       <View style={styles.progressContainer}>
         <Text style={styles.sectionTitle}>Your Progress</Text>
-        
+
         {/* Overall Progress */}
         <View style={styles.overallProgressCard}>
           <View style={styles.overallProgressHeader}>
             <Text style={styles.overallProgressTitle}>Onboarding Progress</Text>
-            <Text style={styles.overallProgressValue}>{progress.progress}%</Text>
+            <Text style={styles.overallProgressValue}>
+              {progress.progress}%
+            </Text>
           </View>
           <View style={styles.progressBar}>
-            <View 
+            <View
               style={[
-                styles.progressBarFill, 
-                { width: `${progress.progress}%` }
-              ]} 
+                styles.progressBarFill,
+                { width: `${progress.progress}%` },
+              ]}
             />
           </View>
           <View style={styles.overallProgressStats}>
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>{progress.completedSteps.length}</Text>
+              <Text style={styles.statValue}>
+                {progress.completedSteps.length}
+              </Text>
               <Text style={styles.statLabel}>Completed</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>{progress.skippedSteps.length}</Text>
+              <Text style={styles.statValue}>
+                {progress.skippedSteps.length}
+              </Text>
               <Text style={styles.statLabel}>Skipped</Text>
             </View>
             <View style={styles.statItem}>
@@ -365,21 +434,27 @@ export default function OnboardingScreen() {
         {/* Tutorial Progress */}
         <View style={styles.tutorialProgressCard}>
           <Text style={styles.tutorialProgressTitle}>Tutorial Progress</Text>
-          {tutorials.map((tutorial) => (
+          {tutorials.map(tutorial => (
             <View key={tutorial.id} style={styles.tutorialProgressItem}>
               <View style={styles.tutorialProgressInfo}>
-                <Text style={styles.tutorialProgressName}>{tutorial.title}</Text>
-                <Text style={styles.tutorialProgressCategory}>{tutorial.category}</Text>
+                <Text style={styles.tutorialProgressName}>
+                  {tutorial.title}
+                </Text>
+                <Text style={styles.tutorialProgressCategory}>
+                  {tutorial.category}
+                </Text>
               </View>
               <View style={styles.tutorialProgressBar}>
-                <View 
+                <View
                   style={[
-                    styles.progressBarFill, 
-                    { width: `${tutorial.progress}%` }
-                  ]} 
+                    styles.progressBarFill,
+                    { width: `${tutorial.progress}%` },
+                  ]}
                 />
               </View>
-              <Text style={styles.tutorialProgressValue}>{tutorial.progress}%</Text>
+              <Text style={styles.tutorialProgressValue}>
+                {tutorial.progress}%
+              </Text>
             </View>
           ))}
         </View>
@@ -388,8 +463,10 @@ export default function OnboardingScreen() {
         <View style={styles.timeSpentCard}>
           <Text style={styles.timeSpentTitle}>Time Spent</Text>
           <View style={styles.timeSpentInfo}>
-            <Ionicons name="time" size={24} color={COLORS.PRIMARY} />
-            <Text style={styles.timeSpentValue}>{progress.timeSpent} minutes</Text>
+            <Ionicons name="time" size={24} color={themeColors.primary} />
+            <Text style={styles.timeSpentValue}>
+              {progress.timeSpent} minutes
+            </Text>
           </View>
           <Text style={styles.timeSpentDescription}>
             Total time spent on onboarding and tutorials
@@ -415,7 +492,7 @@ export default function OnboardingScreen() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.PRIMARY} />
+        <ActivityIndicator size="large" color={themeColors.primary} />
         <Text style={styles.loadingText}>Loading onboarding data...</Text>
       </View>
     );
@@ -429,24 +506,30 @@ export default function OnboardingScreen() {
           { key: 'onboarding', label: 'Onboarding', icon: 'rocket' },
           { key: 'tutorials', label: 'Tutorials', icon: 'book' },
           { key: 'progress', label: 'Progress', icon: 'bar-chart' },
-        ].map((tab) => (
+        ].map(tab => (
           <TouchableOpacity
             key={tab.key}
             style={[
               styles.tabButton,
-              selectedTab === tab.key && styles.tabButtonSelected
+              selectedTab === tab.key && styles.tabButtonSelected,
             ]}
             onPress={() => setSelectedTab(tab.key as any)}
           >
-            <Ionicons 
-              name={tab.icon as any} 
-              size={20} 
-              color={selectedTab === tab.key ? COLORS.SURFACE : COLORS.TEXT_SECONDARY} 
+            <Ionicons
+              name={tab.icon as any}
+              size={20}
+              color={
+                selectedTab === tab.key
+                  ? themeColors.surface
+                  : themeColors.textSecondary
+              }
             />
-            <Text style={[
-              styles.tabButtonText,
-              selectedTab === tab.key && styles.tabButtonTextSelected
-            ]}>
+            <Text
+              style={[
+                styles.tabButtonText,
+                selectedTab === tab.key && styles.tabButtonTextSelected,
+              ]}
+            >
               {tab.label}
             </Text>
           </TouchableOpacity>
@@ -454,7 +537,7 @@ export default function OnboardingScreen() {
       </View>
 
       {/* Content */}
-      <ScrollView 
+      <ScrollView
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
@@ -468,24 +551,24 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: themeColors.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: themeColors.background,
   },
   loadingText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
     marginTop: SPACING.MD,
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.BORDER,
+    borderBottomColor: themeColors.border,
   },
   tabButton: {
     flex: 1,
@@ -497,15 +580,15 @@ const styles = StyleSheet.create({
     gap: SPACING.XS,
   },
   tabButtonSelected: {
-    backgroundColor: COLORS.PRIMARY,
+    backgroundColor: themeColors.primary,
   },
   tabButtonText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
   },
   tabButtonTextSelected: {
-    color: COLORS.SURFACE,
+    color: themeColors.surface,
   },
   content: {
     flex: 1,
@@ -520,18 +603,18 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginTop: SPACING.MD,
     marginBottom: SPACING.SM,
   },
   emptyStateText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
     textAlign: 'center',
     marginBottom: SPACING.LG,
   },
   startButton: {
-    backgroundColor: COLORS.PRIMARY,
+    backgroundColor: themeColors.primary,
     paddingHorizontal: SPACING.LG,
     paddingVertical: SPACING.MD,
     borderRadius: BORDER_RADIUS.MD,
@@ -539,7 +622,7 @@ const styles = StyleSheet.create({
   startButtonText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.SURFACE,
+    color: themeColors.surface,
   },
   onboardingContainer: {
     gap: SPACING.LG,
@@ -548,10 +631,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     borderRadius: BORDER_RADIUS.MD,
     padding: SPACING.MD,
-    shadowColor: COLORS.TEXT_PRIMARY,
+    shadowColor: themeColors.text_PRIMARY,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -563,42 +646,42 @@ const styles = StyleSheet.create({
   progressTitle: {
     fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginBottom: SPACING.XS,
   },
   progressDescription: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
   progressCircle: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: COLORS.PRIMARY,
+    backgroundColor: themeColors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
   progressText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.SURFACE,
+    color: themeColors.surface,
   },
   progressBar: {
     height: 8,
-    backgroundColor: COLORS.BORDER,
+    backgroundColor: themeColors.border,
     borderRadius: 4,
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: COLORS.PRIMARY,
+    backgroundColor: themeColors.primary,
     borderRadius: 4,
   },
   stepContent: {
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     borderRadius: BORDER_RADIUS.MD,
     padding: SPACING.MD,
-    shadowColor: COLORS.TEXT_PRIMARY,
+    shadowColor: themeColors.text_PRIMARY,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -614,7 +697,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: themeColors.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -624,12 +707,12 @@ const styles = StyleSheet.create({
   stepType: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.PRIMARY,
+    color: themeColors.primary,
     marginBottom: SPACING.XS,
   },
   stepDuration: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
   stepActions: {
     gap: SPACING.SM,
@@ -637,7 +720,7 @@ const styles = StyleSheet.create({
   actionsTitle: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginBottom: SPACING.SM,
   },
   actionItem: {
@@ -647,7 +730,7 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -664,20 +747,20 @@ const styles = StyleSheet.create({
     gap: SPACING.SM,
   },
   completeButton: {
-    backgroundColor: COLORS.PRIMARY,
+    backgroundColor: themeColors.primary,
   },
   skipButton: {
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: themeColors.background,
     borderWidth: 1,
-    borderColor: COLORS.BORDER,
+    borderColor: themeColors.border,
   },
   actionButtonText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.SURFACE,
+    color: themeColors.surface,
   },
   skipButtonText: {
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
   tutorialsContainer: {
     gap: SPACING.LG,
@@ -685,7 +768,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginBottom: SPACING.MD,
   },
   categorySection: {
@@ -699,13 +782,13 @@ const styles = StyleSheet.create({
   categoryTitle: {
     fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
   },
   tutorialCard: {
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     borderRadius: BORDER_RADIUS.MD,
     padding: SPACING.MD,
-    shadowColor: COLORS.TEXT_PRIMARY,
+    shadowColor: themeColors.text_PRIMARY,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -724,12 +807,12 @@ const styles = StyleSheet.create({
   tutorialName: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginBottom: SPACING.XS,
   },
   tutorialDescription: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
   tutorialMeta: {
     alignItems: 'flex-end',
@@ -743,7 +826,7 @@ const styles = StyleSheet.create({
   difficultyText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.SURFACE,
+    color: themeColors.surface,
   },
   timeBadge: {
     flexDirection: 'row',
@@ -751,12 +834,12 @@ const styles = StyleSheet.create({
     gap: SPACING.XS,
     paddingHorizontal: SPACING.SM,
     paddingVertical: SPACING.XS,
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: themeColors.background,
     borderRadius: BORDER_RADIUS.SM,
   },
   timeText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
   tutorialProgress: {
     flexDirection: 'row',
@@ -771,17 +854,17 @@ const styles = StyleSheet.create({
   },
   completedText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.SUCCESS,
+    color: themeColors.success,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
   },
   progressContainer: {
     gap: SPACING.LG,
   },
   overallProgressCard: {
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     borderRadius: BORDER_RADIUS.MD,
     padding: SPACING.MD,
-    shadowColor: COLORS.TEXT_PRIMARY,
+    shadowColor: themeColors.text_PRIMARY,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -796,12 +879,12 @@ const styles = StyleSheet.create({
   overallProgressTitle: {
     fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
   },
   overallProgressValue: {
     fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.PRIMARY,
+    color: themeColors.primary,
   },
   overallProgressStats: {
     flexDirection: 'row',
@@ -814,17 +897,17 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
   },
   statLabel: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
   tutorialProgressCard: {
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     borderRadius: BORDER_RADIUS.MD,
     padding: SPACING.MD,
-    shadowColor: COLORS.TEXT_PRIMARY,
+    shadowColor: themeColors.text_PRIMARY,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -833,7 +916,7 @@ const styles = StyleSheet.create({
   tutorialProgressTitle: {
     fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginBottom: SPACING.MD,
   },
   tutorialProgressItem: {
@@ -848,30 +931,30 @@ const styles = StyleSheet.create({
   tutorialProgressName: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
   },
   tutorialProgressCategory: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
   tutorialProgressBar: {
     flex: 1,
     height: 4,
-    backgroundColor: COLORS.BORDER,
+    backgroundColor: themeColors.border,
     borderRadius: 2,
     overflow: 'hidden',
   },
   tutorialProgressValue: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
     minWidth: 40,
     textAlign: 'right',
   },
   timeSpentCard: {
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     borderRadius: BORDER_RADIUS.MD,
     padding: SPACING.MD,
-    shadowColor: COLORS.TEXT_PRIMARY,
+    shadowColor: themeColors.text_PRIMARY,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -880,7 +963,7 @@ const styles = StyleSheet.create({
   timeSpentTitle: {
     fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginBottom: SPACING.SM,
   },
   timeSpentInfo: {
@@ -892,10 +975,10 @@ const styles = StyleSheet.create({
   timeSpentValue: {
     fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.PRIMARY,
+    color: themeColors.primary,
   },
   timeSpentDescription: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
 });

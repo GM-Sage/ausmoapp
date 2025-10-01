@@ -1,0 +1,92 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# JavaScript and TypeScript files
+*.js text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+
+# Source code
+*.java text eol=lf
+*.kt text eol=lf
+*.swift text eol=lf
+*.m text eol=lf
+*.mm text eol=lf
+
+# Documentation
+*.md text eol=lf
+
+# Config files
+*.yml text eol=lf
+*.yaml text eol=lf
+*.xml text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
+
+# Lock files
+package-lock.json text eol=lf
+yarn.lock text eol=lf
+pnpm-lock.yaml text eol=lf
+
+# Gradle Wrapper (for Android)
+gradlew text eol=lf
+
+# Windows specific
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg binary
+*.mp3 binary
+*.wav binary
+*.mp4 binary
+*.pdf binary
+*.zip binary
+*.tar binary
+*.gz binary
+
+# Archives
+*.7z binary
+*.rar binary
+*.bz2 binary
+*.xz binary
+
+# Documents
+*.pdf binary
+*.doc binary
+*.docx binary
+*.xls binary
+*.xlsx binary
+*.ppt binary
+*.pptx binary
+
+# Certificates and keys
+*.p12 binary
+*.pfx binary
+*.pem binary
+*.key binary
+*.crt binary
+*.cer binary
+
+# Android specific
+*.apk binary
+*.aab binary
+*.jks binary
+*.keystore binary
+
+# iOS specific
+*.ipa binary
+*.mobileprovision binary
+
+# Expo
+.expo/* linguist-generated=true

@@ -2,17 +2,29 @@
 
 import React from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
-import { COLORS, TYPOGRAPHY } from '../../constants';
+import { TYPOGRAPHY } from '../../constants';
+import { useVisualSettings } from '../../contexts/VisualSettingsContext';
+import { getThemeColors } from '../../utils/themeUtils';
 
 interface LoadingScreenProps {
   message?: string;
 }
 
-export default function LoadingScreen({ message = 'Loading...' }: LoadingScreenProps) {
+export default function LoadingScreen({
+  message = 'Loading...',
+}: LoadingScreenProps) {
+  const { theme } = useVisualSettings();
+  const safeTheme = theme || 'light'; // Ensure theme is never undefined
+  const themeColors = getThemeColors(safeTheme);
+
   return (
-    <View style={styles.container}>
-      <ActivityIndicator size="large" color={COLORS.PRIMARY} />
-      <Text style={styles.message}>{message}</Text>
+    <View
+      style={[styles.container, { backgroundColor: themeColors.background }]}
+    >
+      <ActivityIndicator size="large" color={themeColors.primary} />
+      <Text style={[styles.message, { color: themeColors.textSecondary }]}>
+        {message}
+      </Text>
     </View>
   );
 }
@@ -22,12 +34,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.BACKGROUND,
   },
   message: {
     marginTop: 16,
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_SECONDARY,
     textAlign: 'center',
   },
 });

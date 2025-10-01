@@ -1,6 +1,6 @@
 // Audio Service for Ausmo AAC App
 
-import { Audio } from 'expo-av';
+import { Audio } from 'expo-audio';
 import * as Speech from 'expo-speech';
 import * as FileSystem from 'expo-file-system';
 import { AUDIO_SETTINGS, TTS_VOICES } from '../constants';
@@ -25,7 +25,7 @@ export class AudioService {
   async initialize(): Promise<void> {
     try {
       console.log('Initializing Audio Service...');
-      
+
       // Request audio permissions
       const { status } = await Audio.requestPermissionsAsync();
       console.log('Audio permission status:', status);
@@ -53,7 +53,7 @@ export class AudioService {
   async speak(text: string, voiceSettings?: VoiceSettings): Promise<void> {
     try {
       console.log('AudioService.speak called with:', { text, voiceSettings });
-      
+
       // Always stop any current speech first
       if (await Speech.isSpeakingAsync()) {
         console.log('Stopping current speech...');
@@ -80,7 +80,14 @@ export class AudioService {
         const voices = await Speech.getAvailableVoicesAsync();
         console.log('Available voices:', voices.length);
         if (voices.length > 0) {
-          console.log('First few voices:', voices.slice(0, 3).map(v => ({ identifier: v.identifier, name: v.name, language: v.language })));
+          console.log(
+            'First few voices:',
+            voices.slice(0, 3).map(v => ({
+              identifier: v.identifier,
+              name: v.name,
+              language: v.language,
+            }))
+          );
         }
       } catch (voiceError) {
         console.log('Could not get available voices:', voiceError);
@@ -102,13 +109,13 @@ export class AudioService {
         onStopped: () => {
           console.log('Speech stopped for:', text);
         },
-        onError: (error) => {
+        onError: error => {
           console.error('Speech error for', text, ':', error);
         },
       };
 
       console.log('Speech options:', options);
-      
+
       // Wait a bit to ensure audio system is ready
       await new Promise(resolve => setTimeout(resolve, 100));
       await Speech.speak(text, options);
@@ -135,7 +142,7 @@ export class AudioService {
   async testAudio(): Promise<boolean> {
     try {
       console.log('Testing audio output...');
-      
+
       // Test 1: Basic TTS with clear text
       console.log('Test 1: Basic TTS');
       await this.speak('Audio test one', {
@@ -212,7 +219,7 @@ export class AudioService {
       this.sound = sound;
 
       // Set up completion handler
-      sound.setOnPlaybackStatusUpdate((status) => {
+      sound.setOnPlaybackStatusUpdate(status => {
         if (status.isLoaded && status.didJustFinish) {
           this.sound = null;
         }
@@ -326,7 +333,7 @@ export class AudioService {
 
       await this.recording.stopAndUnloadAsync();
       const uri = this.recording.getURI();
-      
+
       this.recording = null;
       this.isRecording = false;
       this.recordingDuration = 0;
@@ -349,7 +356,7 @@ export class AudioService {
       if (this.isRecording && this.recording) {
         await this.recording.pauseAsync();
         this.isRecording = false;
-        
+
         if (this.recordingTimer) {
           clearInterval(this.recordingTimer);
           this.recordingTimer = null;
@@ -405,27 +412,29 @@ export class AudioService {
   async getRecommendedVoices(): Promise<Speech.Voice[]> {
     try {
       const voices = await Speech.getAvailableVoicesAsync();
-      
+
       // Filter for high-quality, clear voices suitable for AAC
       const recommendedVoices = voices.filter(voice => {
         // Prefer enhanced quality voices
         if (voice.quality === Speech.VoiceQuality.Enhanced) {
           return true;
         }
-        
+
         // Include some standard quality voices that are known to be clear
         const clearStandardVoices = [
           'com.apple.voice.compact.en-US.Samantha',
           'com.apple.eloquence.en-US.Eddy',
           'com.apple.eloquence.en-US.Flo',
           'com.apple.ttsbundle.Samantha-compact',
-          'com.apple.ttsbundle.Alex-compact'
+          'com.apple.ttsbundle.Alex-compact',
         ];
-        
+
         return clearStandardVoices.includes(voice.identifier);
       });
-      
-      console.log(`Found ${recommendedVoices.length} recommended voices for AAC`);
+
+      console.log(
+        `Found ${recommendedVoices.length} recommended voices for AAC`
+      );
       return recommendedVoices;
     } catch (error) {
       console.error('Error getting recommended voices:', error);
@@ -437,14 +446,14 @@ export class AudioService {
   async getAcapelaVoices(): Promise<Speech.Voice[]> {
     try {
       const voices = await Speech.getAvailableVoicesAsync();
-      
+
       // Filter for premium voices that sound like Acapela
       const acapelaVoices = voices.filter(voice => {
         // Look for high-quality voices with natural sound
         if (voice.quality === Speech.VoiceQuality.Enhanced) {
           return true;
         }
-        
+
         // Include specific voices that have Acapela-like quality
         const acapelaStyleVoices = [
           'com.apple.voice.compact.en-US.Samantha',
@@ -454,10 +463,10 @@ export class AudioService {
           'com.apple.voice.compact.en-US.Karen',
           'com.apple.voice.compact.en-US.Fred',
         ];
-        
+
         return acapelaStyleVoices.includes(voice.identifier);
       });
-      
+
       console.log(`Found ${acapelaVoices.length} Acapela-style voices`);
       return acapelaVoices;
     } catch (error) {
@@ -467,41 +476,49 @@ export class AudioService {
   }
 
   // Get voices by gender
-  async getVoicesByGender(gender: 'male' | 'female' | 'child'): Promise<Speech.Voice[]> {
+  async getVoicesByGender(
+    gender: 'male' | 'female' | 'child'
+  ): Promise<Speech.Voice[]> {
     try {
       const voices = await Speech.getAvailableVoicesAsync();
-      
+
       const genderVoices = voices.filter(voice => {
         const identifier = voice.identifier.toLowerCase();
         const name = voice.name.toLowerCase();
-        
+
         switch (gender) {
           case 'male':
-            return identifier.includes('alex') || 
-                   identifier.includes('daniel') || 
-                   identifier.includes('fred') ||
-                   name.includes('male') ||
-                   name.includes('man');
-          
+            return (
+              identifier.includes('alex') ||
+              identifier.includes('daniel') ||
+              identifier.includes('fred') ||
+              name.includes('male') ||
+              name.includes('man')
+            );
+
           case 'female':
-            return identifier.includes('samantha') || 
-                   identifier.includes('victoria') || 
-                   identifier.includes('karen') ||
-                   name.includes('female') ||
-                   name.includes('woman');
-          
+            return (
+              identifier.includes('samantha') ||
+              identifier.includes('victoria') ||
+              identifier.includes('karen') ||
+              name.includes('female') ||
+              name.includes('woman')
+            );
+
           case 'child':
-            return identifier.includes('tommy') || 
-                   identifier.includes('emma') ||
-                   name.includes('child') ||
-                   name.includes('kid') ||
-                   name.includes('young');
-          
+            return (
+              identifier.includes('tommy') ||
+              identifier.includes('emma') ||
+              name.includes('child') ||
+              name.includes('kid') ||
+              name.includes('young')
+            );
+
           default:
             return false;
         }
       });
-      
+
       console.log(`Found ${genderVoices.length} ${gender} voices`);
       return genderVoices;
     } catch (error) {
@@ -514,12 +531,14 @@ export class AudioService {
   async getVoicesByLanguage(language: string): Promise<Speech.Voice[]> {
     try {
       const voices = await Speech.getAvailableVoicesAsync();
-      
-      const languageVoices = voices.filter(voice => 
+
+      const languageVoices = voices.filter(voice =>
         voice.language.toLowerCase().includes(language.toLowerCase())
       );
-      
-      console.log(`Found ${languageVoices.length} voices for language: ${language}`);
+
+      console.log(
+        `Found ${languageVoices.length} voices for language: ${language}`
+      );
       return languageVoices;
     } catch (error) {
       console.error(`Error getting voices for language ${language}:`, error);
@@ -528,7 +547,9 @@ export class AudioService {
   }
 
   // Get voice by identifier
-  async getVoiceByIdentifier(identifier: string): Promise<Speech.Voice | undefined> {
+  async getVoiceByIdentifier(
+    identifier: string
+  ): Promise<Speech.Voice | undefined> {
     try {
       const voices = await Speech.getAvailableVoicesAsync();
       return voices.find(voice => voice.identifier === identifier);
@@ -542,14 +563,14 @@ export class AudioService {
   async getDefaultVoice(): Promise<string | undefined> {
     try {
       const recommendedVoices = await this.getRecommendedVoices();
-      
+
       if (recommendedVoices.length > 0) {
         // Return the first recommended voice
         const defaultVoice = recommendedVoices[0].identifier;
         console.log('Using default voice:', defaultVoice);
         return defaultVoice;
       }
-      
+
       // Fallback to undefined (system default)
       console.log('No recommended voices found, using system default');
       return undefined;
@@ -572,7 +593,10 @@ export class AudioService {
   }
 
   // Convert audio format
-  async convertAudioFormat(audioUri: string, format: 'mp3' | 'wav' | 'aac' | 'm4a'): Promise<string> {
+  async convertAudioFormat(
+    audioUri: string,
+    format: 'mp3' | 'wav' | 'aac' | 'm4a'
+  ): Promise<string> {
     try {
       // This would typically involve server-side conversion
       // For now, return the original URI
@@ -584,7 +608,9 @@ export class AudioService {
   }
 
   // Get audio file info
-  async getAudioInfo(audioUri: string): Promise<{ duration: number; size: number; format: string }> {
+  async getAudioInfo(
+    audioUri: string
+  ): Promise<{ duration: number; size: number; format: string }> {
     try {
       const info = await FileSystem.getInfoAsync(audioUri);
       if (!info.exists) {
@@ -608,7 +634,9 @@ export class AudioService {
   }
 
   // Play scan sound for switch scanning
-  async playScanSound(soundType: 'beep-high' | 'beep-medium' | 'beep-low'): Promise<void> {
+  async playScanSound(
+    soundType: 'beep-high' | 'beep-medium' | 'beep-low'
+  ): Promise<void> {
     try {
       // Create different frequency beeps for different scan actions
       const frequencies = {
@@ -622,18 +650,25 @@ export class AudioService {
 
       // Generate a simple beep sound using Web Audio API
       if (typeof window !== 'undefined' && window.AudioContext) {
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const audioContext = new (window.AudioContext ||
+          (window as any).webkitAudioContext)();
         const oscillator = audioContext.createOscillator();
         const gainNode = audioContext.createGain();
 
         oscillator.connect(gainNode);
         gainNode.connect(audioContext.destination);
 
-        oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+        oscillator.frequency.setValueAtTime(
+          frequency,
+          audioContext.currentTime
+        );
         oscillator.type = 'sine';
 
         gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+        gainNode.gain.exponentialRampToValueAtTime(
+          0.01,
+          audioContext.currentTime + duration
+        );
 
         oscillator.start(audioContext.currentTime);
         oscillator.stop(audioContext.currentTime + duration);

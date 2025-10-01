@@ -29,10 +29,10 @@ export const useSafeArea = (): SafeAreaMeasurements => {
     const isLandscape = width > height;
     const isTablet = Math.min(width, height) >= 768;
     const isSmallScreen = Math.min(width, height) < 375;
-    
+
     // Detect notch (top inset > 20 on iOS)
     const hasNotch = Platform.OS === 'ios' && insets.top > 20;
-    
+
     // Detect home indicator (bottom inset > 0 on iOS)
     const hasHomeIndicator = Platform.OS === 'ios' && insets.bottom > 0;
 
@@ -57,57 +57,69 @@ export const useSafeArea = (): SafeAreaMeasurements => {
 // Hook for communication screen specific measurements
 export const useCommunicationSafeArea = () => {
   const safeArea = useSafeArea();
-  
-  return useMemo(() => ({
-    ...safeArea,
-    // Communication specific calculations
-    buttonAreaHeight: safeArea.availableHeight * 0.7, // 70% for buttons
-    headerHeight: 60 + safeArea.top, // Header + safe area
-    footerHeight: 80 + safeArea.bottom, // Footer + safe area
-    gridPadding: Math.min(safeArea.left, safeArea.right, 16), // Minimum padding
-    buttonSpacing: safeArea.isSmallScreen ? 8 : 12, // Adaptive spacing
-  }), [safeArea]);
+
+  return useMemo(
+    () => ({
+      ...safeArea,
+      // Communication specific calculations
+      buttonAreaHeight: safeArea.availableHeight * 0.7, // 70% for buttons
+      headerHeight: 60 + safeArea.top, // Header + safe area
+      footerHeight: 80 + safeArea.bottom, // Footer + safe area
+      gridPadding: Math.min(safeArea.left, safeArea.right, 16), // Minimum padding
+      buttonSpacing: safeArea.isSmallScreen ? 8 : 12, // Adaptive spacing
+    }),
+    [safeArea]
+  );
 };
 
 // Hook for settings screen specific measurements
 export const useSettingsSafeArea = () => {
   const safeArea = useSafeArea();
-  
-  return useMemo(() => ({
-    ...safeArea,
-    // Settings specific calculations
-    listItemHeight: 60,
-    sectionHeaderHeight: 40,
-    contentPadding: 16,
-    maxContentWidth: Math.min(safeArea.availableWidth, 600), // Max width for readability
-  }), [safeArea]);
+
+  return useMemo(
+    () => ({
+      ...safeArea,
+      // Settings specific calculations
+      listItemHeight: 60,
+      sectionHeaderHeight: 40,
+      contentPadding: 16,
+      maxContentWidth: Math.min(safeArea.availableWidth, 600), // Max width for readability
+    }),
+    [safeArea]
+  );
 };
 
 // Hook for modal specific measurements
 export const useModalSafeArea = () => {
   const safeArea = useSafeArea();
-  
-  return useMemo(() => ({
-    ...safeArea,
-    // Modal specific calculations
-    modalMaxHeight: safeArea.availableHeight * 0.9, // 90% of available height
-    modalMaxWidth: safeArea.availableWidth * 0.95, // 95% of available width
-    modalPadding: 20,
-    closeButtonSize: 44, // Minimum touch target
-  }), [safeArea]);
+
+  return useMemo(
+    () => ({
+      ...safeArea,
+      // Modal specific calculations
+      modalMaxHeight: safeArea.availableHeight * 0.9, // 90% of available height
+      modalMaxWidth: safeArea.availableWidth * 0.95, // 95% of available width
+      modalPadding: 20,
+      closeButtonSize: 44, // Minimum touch target
+    }),
+    [safeArea]
+  );
 };
 
 // Hook for keyboard specific measurements
 export const useKeyboardSafeArea = () => {
   const safeArea = useSafeArea();
-  
-  return useMemo(() => ({
-    ...safeArea,
-    // Keyboard specific calculations
-    keyboardAvoidanceHeight: safeArea.bottom + 20, // Extra padding for keyboard
-    inputAreaHeight: 60 + safeArea.bottom, // Input area height
-    suggestionAreaHeight: 50, // Suggestion bar height
-  }), [safeArea]);
+
+  return useMemo(
+    () => ({
+      ...safeArea,
+      // Keyboard specific calculations
+      keyboardAvoidanceHeight: safeArea.bottom + 20, // Extra padding for keyboard
+      inputAreaHeight: 60 + safeArea.bottom, // Input area height
+      suggestionAreaHeight: 50, // Suggestion bar height
+    }),
+    [safeArea]
+  );
 };
 
 export default useSafeArea;

@@ -1,12 +1,12 @@
 // Visual Settings Screen
 
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
   Alert,
   Switch,
   TextInput,
@@ -16,38 +16,54 @@ import { useSelector, useDispatch } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 
 import { RootState } from '../../store';
+import { setCurrentUser } from '../../store/slices/userSlice';
 import { VisualSettings } from '../../types';
-import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../../constants';
+import { TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../../constants';
+import DatabaseService from '../../services/databaseService';
+import { useVisualSettings } from '../../contexts/VisualSettingsContext';
+import { getThemeColors } from '../../utils/themeUtils';
 
 export default function VisualSettingsScreen() {
   const currentUser = useSelector((state: RootState) => state.user.currentUser);
+  const dispatch = useDispatch();
+  const { theme } = useVisualSettings();
+  const safeTheme = theme || 'light'; // Ensure theme is never undefined
+  const themeColors = getThemeColors(safeTheme);
   const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  
+
   // Visual settings
   const [highContrast, setHighContrast] = useState(false);
   const [largeText, setLargeText] = useState(false);
-  const [buttonSize, setButtonSize] = useState<'small' | 'medium' | 'large' | 'extra-large'>('medium');
+  const [buttonSize, setButtonSize] = useState<
+    'small' | 'medium' | 'large' | 'extra-large'
+  >('medium');
   const [gridSpacing, setGridSpacing] = useState(10);
-  const [backgroundColor, setBackgroundColor] = useState('#FFFFFF');
-  const [textColor, setTextColor] = useState('#000000');
-  const [borderColor, setBorderColor] = useState('#CCCCCC');
-  const [theme, setTheme] = useState<'light' | 'dark' | 'high-contrast'>('light');
+
+  const [backgroundColor, setBackgroundColor] = useState(
+    themeColors.background
+  );
+  const [textColor, setTextColor] = useState(themeColors.text);
+  const [borderColor, setBorderColor] = useState(themeColors.border);
+  const [currentTheme, setCurrentTheme] = useState<
+    'light' | 'dark' | 'high-contrast' | 'system'
+  >('system');
 
   useEffect(() => {
     if (currentUser?.settings) {
       const visual = currentUser.settings.visualSettings;
-      
+
       setHighContrast(visual.highContrast);
       setLargeText(visual.largeText);
       setButtonSize(visual.buttonSize);
       setGridSpacing(visual.gridSpacing);
-      setBackgroundColor(visual.backgroundColor);
-      setTextColor(visual.textColor);
-      setBorderColor(visual.borderColor);
-      setTheme(visual.theme);
+      // Use theme-aware colors instead of stored hardcoded colors
+      setBackgroundColor(themeColors.background);
+      setTextColor(themeColors.text);
+      setBorderColor(themeColors.border);
+      setCurrentTheme(visual.theme);
     }
-  }, [currentUser]);
+  }, [currentUser, themeColors, setCurrentTheme]);
 
   const handleSave = async () => {
     if (!currentUser) {
@@ -57,7 +73,7 @@ export default function VisualSettingsScreen() {
 
     try {
       setIsLoading(true);
-      
+
       const updatedVisualSettings: VisualSettings = {
         highContrast,
         largeText,
@@ -66,21 +82,107 @@ export default function VisualSettingsScreen() {
         backgroundColor,
         textColor,
         borderColor,
-        theme,
+        theme: theme,
+        calmMode: false,
+        reduceMotion: false,
+        sensoryFriendly: false,
       };
 
       const updatedUser = {
         ...currentUser,
+        createdAt:
+          typeof currentUser.createdAt === 'string'
+            ? new Date(currentUser.createdAt)
+            : currentUser.createdAt,
         settings: {
           ...currentUser.settings,
           visualSettings: updatedVisualSettings,
+          voiceSettings: currentUser.settings?.voiceSettings || {
+            ttsVoice: 'default',
+            ttsSpeed: 1.0,
+            ttsPitch: 1.0,
+            volume: 1.0,
+            autoRepeat: false,
+            repeatDelay: 1.0,
+          },
+          accessibilitySettings: currentUser.settings
+            ?.accessibilitySettings || {
+            switchScanning: false,
+            scanSpeed: 1.0,
+            scanMode: 'automatic',
+            scanDirection: 'row-column',
+            holdToActivate: false,
+            touchSensitivity: 0.5,
+            oneHandedMode: false,
+            reduceMotion: false,
+            screenReader: {
+              enabled: false,
+              announceChanges: false,
+              announceButtons: false,
+            },
+            gestures: {
+              enabled: false,
+              customGestures: {},
+            },
+          },
+          scanningSettings: currentUser.settings?.scanningSettings || {
+            enabled: false,
+            speed: 1.0,
+            mode: 'automatic',
+            direction: 'row-column',
+            visualIndicator: false,
+            audioIndicator: false,
+            externalSwitch: false,
+          },
+          audioSettings: currentUser.settings?.audioSettings || {
+            volume: 1.0,
+            backgroundMusic: false,
+            musicVolume: 0.5,
+            audioFeedback: true,
+            noiseReduction: false,
+          },
+          expressSettings: currentUser.settings?.expressSettings || {
+            combineTTSItems: true,
+            combineAsWordFragments: false,
+            rightToLeftAccumulation: false,
+            playWhenAdding: false,
+            scanExpressBar: false,
+            expressBarLocation: 'bottom',
+            disableExpressRepeat: false,
+            createNewPagesAsExpress: false,
+          },
+          advancedSettings: currentUser.settings?.advancedSettings || {
+            hideAllImages: false,
+            showTouchesWhenExternalDisplay: false,
+            switchamajigSupport: false,
+            quizSupport: false,
+            enableEightQuickButtons: false,
+            tactileTalkSupport: false,
+            disableInternetSearch: false,
+            goToMainMenuOnNextStartup: false,
+            experimentalFeatures: false,
+          },
         },
         updatedAt: new Date(),
       };
 
       // Update user in database
-      // await DatabaseService.updateUser(updatedUser);
-      
+      await DatabaseService.updateUser(updatedUser);
+
+      // Update Redux store with serialized user
+      const serializedUser = {
+        ...updatedUser,
+        createdAt:
+          updatedUser.createdAt instanceof Date
+            ? updatedUser.createdAt.toISOString()
+            : updatedUser.createdAt,
+        updatedAt:
+          updatedUser.updatedAt instanceof Date
+            ? updatedUser.updatedAt.toISOString()
+            : updatedUser.updatedAt,
+      };
+      dispatch(setCurrentUser(serializedUser));
+
       Alert.alert('Success', 'Visual settings saved successfully');
       setIsEditing(false);
     } catch (error) {
@@ -91,50 +193,114 @@ export default function VisualSettingsScreen() {
     }
   };
 
-  const handleThemeChange = (newTheme: 'light' | 'dark' | 'high-contrast') => {
-    setTheme(newTheme);
-    
-    // Apply theme-specific colors
-    switch (newTheme) {
-      case 'dark':
-        setBackgroundColor('#121212');
-        setTextColor('#FFFFFF');
-        setBorderColor('#333333');
-        break;
-      case 'high-contrast':
-        setBackgroundColor('#000000');
-        setTextColor('#FFFFFF');
-        setBorderColor('#FFFFFF');
-        setHighContrast(true);
-        break;
-      case 'light':
-      default:
-        setBackgroundColor('#FFFFFF');
-        setTextColor('#000000');
-        setBorderColor('#CCCCCC');
-        break;
+  const handleThemeChange = (
+    newTheme: 'light' | 'dark' | 'high-contrast' | 'system'
+  ) => {
+    setCurrentTheme(newTheme);
+
+    // Update colors based on theme
+    const newThemeColors = getThemeColors(newTheme);
+    setBackgroundColor(newThemeColors.background);
+    setTextColor(newThemeColors.text);
+    setBorderColor(newThemeColors.border);
+
+    if (newTheme === 'high-contrast') {
+      setHighContrast(true);
+    }
+
+    // Optimistically apply theme to Redux so the app updates immediately
+    if (currentUser?.settings) {
+      const updatedUser = {
+        ...currentUser,
+        settings: {
+          ...currentUser.settings,
+          visualSettings: {
+            ...currentUser.settings.visualSettings,
+            theme: currentTheme,
+            backgroundColor: newThemeColors.background,
+            textColor: newThemeColors.text,
+            borderColor: newThemeColors.border,
+          },
+        },
+        updatedAt: new Date().toISOString(),
+      };
+      dispatch(setCurrentUser(updatedUser));
     }
   };
 
   const buttonSizes = [
-    { value: 'small', label: 'Small', description: 'Compact buttons for small screens' },
+    {
+      value: 'small',
+      label: 'Small',
+      description: 'Compact buttons for small screens',
+    },
     { value: 'medium', label: 'Medium', description: 'Standard button size' },
-    { value: 'large', label: 'Large', description: 'Larger buttons for easier touch' },
-    { value: 'extra-large', label: 'Extra Large', description: 'Maximum size for accessibility' },
+    {
+      value: 'large',
+      label: 'Large',
+      description: 'Larger buttons for easier touch',
+    },
+    {
+      value: 'extra-large',
+      label: 'Extra Large',
+      description: 'Maximum size for accessibility',
+    },
   ];
 
   const themes = [
-    { value: 'light', label: 'Light', description: 'Light background with dark text' },
-    { value: 'dark', label: 'Dark', description: 'Dark background with light text' },
-    { value: 'high-contrast', label: 'High Contrast', description: 'Maximum contrast for visibility' },
+    {
+      value: 'system',
+      label: 'System',
+      description: 'Follows device theme settings',
+    },
+    {
+      value: 'light',
+      label: 'Light',
+      description: 'Light background with dark text',
+    },
+    {
+      value: 'dark',
+      label: 'Dark',
+      description: 'Dark background with light text',
+    },
+    {
+      value: 'high-contrast',
+      label: 'High Contrast',
+      description: 'Maximum contrast for visibility',
+    },
   ];
 
   const colorPresets = [
-    { name: 'Blue', bg: '#E3F2FD', text: '#1976D2', border: '#2196F3' },
-    { name: 'Green', bg: '#E8F5E8', text: '#2E7D32', border: '#4CAF50' },
-    { name: 'Purple', bg: '#F3E5F5', text: '#7B1FA2', border: '#9C27B0' },
-    { name: 'Orange', bg: '#FFF3E0', text: '#F57C00', border: '#FF9800' },
-    { name: 'Pink', bg: '#FCE4EC', text: '#C2185B', border: '#E91E63' },
+    {
+      name: 'Blue',
+      bg: themeColors.calm,
+      text: themeColors.primary,
+      border: themeColors.primary,
+    },
+    {
+      name: 'Green',
+      bg: themeColors.calm,
+      text: themeColors.secondary,
+      border: themeColors.secondary,
+    },
+    {
+      name: 'Purple',
+      bg: themeColors.calm,
+      text: themeColors.info,
+      border: themeColors.info,
+    },
+    {
+      name: 'Orange',
+      bg: themeColors.calm,
+      text: themeColors.warning,
+      border: themeColors.warning,
+    },
+    {
+      name: 'Pink',
+      bg: themeColors.calm,
+      text: themeColors.error,
+      border: themeColors.error,
+    },
   ];
 
   const renderSettingRow = (
@@ -142,16 +308,31 @@ export default function VisualSettingsScreen() {
     children: React.ReactNode,
     description?: string
   ) => (
-    <View style={styles.settingRow}>
+    <View
+      style={[
+        styles.settingRow,
+        {
+          backgroundColor: themeColors.surface,
+          borderColor: themeColors.border,
+        },
+      ]}
+    >
       <View style={styles.settingInfo}>
-        <Text style={styles.settingLabel}>{label}</Text>
+        <Text style={[styles.settingLabel, { color: themeColors.text }]}>
+          {label}
+        </Text>
         {description && (
-          <Text style={styles.settingDescription}>{description}</Text>
+          <Text
+            style={[
+              styles.settingDescription,
+              { color: themeColors.textSecondary },
+            ]}
+          >
+            {description}
+          </Text>
         )}
       </View>
-      <View style={styles.settingControl}>
-        {children}
-      </View>
+      <View style={styles.settingControl}>{children}</View>
     </View>
   );
 
@@ -179,61 +360,112 @@ export default function VisualSettingsScreen() {
           step={step}
           value={value}
           onValueChange={onValueChange}
-          disabled={!isEditing}
-          minimumTrackTintColor={COLORS.PRIMARY}
-          maximumTrackTintColor={COLORS.BORDER}
-          thumbTintColor="#2196F3"
+          disabled={false}
+          minimumTrackTintColor={themeColors.primary}
+          maximumTrackTintColor={themeColors.border}
+          thumbTintColor={themeColors.primary}
         />
       </View>
     </View>
   );
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => setIsEditing(!isEditing)} style={styles.editButton}>
-          <Ionicons name={isEditing ? "close" : "pencil"} size={24} color={COLORS.SURFACE} />
+    <View
+      style={[styles.container, { backgroundColor: themeColors.background }]}
+    >
+      <View style={[styles.header, { backgroundColor: themeColors.primary }]}>
+        <TouchableOpacity
+          onPress={() => setIsEditing(!isEditing)}
+          style={styles.editButton}
+        >
+          <Ionicons
+            name={isEditing ? 'close' : 'pencil'}
+            size={24}
+            color={themeColors.surface}
+          />
         </TouchableOpacity>
-        <Text style={styles.title}>Visual Settings</Text>
+        <Text style={[styles.title, { color: themeColors.text }]}>
+          Visual Settings
+        </Text>
         {isEditing && (
           <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
-            <Ionicons name="checkmark" size={24} color={COLORS.SURFACE} />
+            <Ionicons name="checkmark" size={24} color={themeColors.surface} />
           </TouchableOpacity>
         )}
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Theme</Text>
-          
+          <Text style={[styles.sectionTitle, { color: themeColors.text }]}>
+            Theme
+          </Text>
+
           <View style={styles.themeContainer}>
-            {themes.map((themeOption) => (
+            {themes.map(themeOption => (
               <TouchableOpacity
                 key={themeOption.value}
                 style={[
                   styles.themeButton,
-                  theme === themeOption.value && styles.themeButtonActive
+                  currentTheme === themeOption.value &&
+                    styles.themeButtonActive,
                 ]}
-                onPress={() => isEditing && handleThemeChange(themeOption.value as any)}
+                onPress={() =>
+                  handleThemeChange(
+                    themeOption.value as
+                      | 'light'
+                      | 'dark'
+                      | 'high-contrast'
+                      | 'system'
+                  )
+                }
               >
-                <View style={[
-                  styles.themePreview,
-                  { backgroundColor: themeOption.value === 'light' ? '#FFFFFF' : themeOption.value === 'dark' ? '#121212' : '#000000' }
-                ]}>
-                  <Text style={[
-                    styles.themePreviewText,
-                    { color: themeOption.value === 'light' ? '#000000' : '#FFFFFF' }
-                  ]}>
+                <View
+                  style={[
+                    styles.themePreview,
+                    {
+                      backgroundColor: getThemeColors(
+                        themeOption.value as
+                          | 'light'
+                          | 'dark'
+                          | 'high-contrast'
+                          | 'system'
+                      ).background,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.themePreviewText,
+                      {
+                        color: getThemeColors(
+                          themeOption.value as
+                            | 'light'
+                            | 'dark'
+                            | 'high-contrast'
+                            | 'system'
+                        ).text,
+                      },
+                    ]}
+                  >
                     Aa
                   </Text>
                 </View>
-                <Text style={[
-                  styles.themeLabel,
-                  theme === themeOption.value && styles.themeLabelActive
-                ]}>
+                <Text
+                  style={[
+                    styles.themeLabel,
+                    { color: themeColors.text },
+                    currentTheme === themeOption.value &&
+                      styles.themeLabelActive,
+                  ]}
+                >
                   {themeOption.label}
                 </Text>
-                <Text style={styles.themeDescription}>
+                <Text
+                  style={[
+                    styles.themeDescription,
+                    { color: themeColors.textSecondary },
+                  ]}
+                >
                   {themeOption.description}
                 </Text>
               </TouchableOpacity>
@@ -242,16 +474,23 @@ export default function VisualSettingsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Accessibility</Text>
-          
+          <Text style={[styles.sectionTitle, { color: themeColors.text }]}>
+            Accessibility
+          </Text>
+
           {renderSettingRow(
             'High Contrast',
             <Switch
               value={highContrast}
               onValueChange={setHighContrast}
-              disabled={!isEditing}
-              trackColor={{ false: COLORS.BORDER, true: COLORS.PRIMARY }}
-              thumbColor={highContrast ? COLORS.SURFACE : COLORS.TEXT_SECONDARY}
+              disabled={false}
+              trackColor={{
+                false: themeColors.border,
+                true: themeColors.primary,
+              }}
+              thumbColor={
+                highContrast ? themeColors.surface : themeColors.textSecondary
+              }
             />,
             'Increase contrast for better visibility'
           )}
@@ -261,9 +500,14 @@ export default function VisualSettingsScreen() {
             <Switch
               value={largeText}
               onValueChange={setLargeText}
-              disabled={!isEditing}
-              trackColor={{ false: COLORS.BORDER, true: COLORS.PRIMARY }}
-              thumbColor={largeText ? COLORS.SURFACE : COLORS.TEXT_SECONDARY}
+              disabled={false}
+              trackColor={{
+                false: themeColors.border,
+                true: themeColors.primary,
+              }}
+              thumbColor={
+                largeText ? themeColors.surface : themeColors.textSecondary
+              }
             />,
             'Use larger text throughout the app'
           )}
@@ -271,30 +515,69 @@ export default function VisualSettingsScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Button Settings</Text>
-          
+
           <View style={styles.buttonSizeContainer}>
-            {buttonSizes.map((size) => (
+            {buttonSizes.map(size => (
               <TouchableOpacity
                 key={size.value}
                 style={[
                   styles.buttonSizeOption,
-                  buttonSize === size.value && styles.buttonSizeOptionActive
+                  buttonSize === size.value && styles.buttonSizeOptionActive,
                 ]}
-                onPress={() => isEditing && setButtonSize(size.value as any)}
-              >
-                <View style={[
-                  styles.buttonSizePreview,
-                  { 
-                    width: size.value === 'small' ? 30 : size.value === 'medium' ? 40 : size.value === 'large' ? 50 : 60,
-                    height: size.value === 'small' ? 30 : size.value === 'medium' ? 40 : size.value === 'large' ? 50 : 60,
+                onPress={() => {
+                  const newSize = size.value as any;
+                  setButtonSize(newSize);
+                  if (currentUser?.settings) {
+                    const updatedUser = {
+                      ...currentUser,
+                      createdAt:
+                        typeof currentUser.createdAt === 'string'
+                          ? new Date(currentUser.createdAt)
+                          : currentUser.createdAt,
+                      settings: {
+                        ...currentUser.settings,
+                        visualSettings: {
+                          ...currentUser.settings.visualSettings,
+                          buttonSize: newSize,
+                        },
+                      },
+                      updatedAt: new Date(),
+                    };
+                    dispatch(setCurrentUser(updatedUser));
                   }
-                ]}>
+                }}
+              >
+                <View
+                  style={[
+                    styles.buttonSizePreview,
+                    {
+                      width:
+                        size.value === 'small'
+                          ? 30
+                          : size.value === 'medium'
+                            ? 40
+                            : size.value === 'large'
+                              ? 50
+                              : 60,
+                      height:
+                        size.value === 'small'
+                          ? 30
+                          : size.value === 'medium'
+                            ? 40
+                            : size.value === 'large'
+                              ? 50
+                              : 60,
+                    },
+                  ]}
+                >
                   <Text style={styles.buttonSizePreviewText}>Btn</Text>
                 </View>
-                <Text style={[
-                  styles.buttonSizeLabel,
-                  buttonSize === size.value && styles.buttonSizeLabelActive
-                ]}>
+                <Text
+                  style={[
+                    styles.buttonSizeLabel,
+                    buttonSize === size.value && styles.buttonSizeLabelActive,
+                  ]}
+                >
                   {size.label}
                 </Text>
                 <Text style={styles.buttonSizeDescription}>
@@ -311,33 +594,35 @@ export default function VisualSettingsScreen() {
             5,
             30,
             1,
-            (value) => `${value}px`
+            value => `${value}px`
           )}
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Colors</Text>
-          
+
           <View style={styles.colorPresets}>
             <Text style={styles.colorPresetsTitle}>Color Presets</Text>
             <View style={styles.colorPresetsList}>
-              {colorPresets.map((preset) => (
+              {colorPresets.map(preset => (
                 <TouchableOpacity
                   key={preset.name}
                   style={styles.colorPreset}
                   onPress={() => {
-                    if (isEditing) {
-                      setBackgroundColor(preset.bg);
-                      setTextColor(preset.text);
-                      setBorderColor(preset.border);
-                    }
+                    setBackgroundColor(preset.bg);
+                    setTextColor(preset.text);
+                    setBorderColor(preset.border);
                   }}
                 >
-                  <View style={[
-                    styles.colorPresetPreview,
-                    { backgroundColor: preset.bg }
-                  ]}>
-                    <Text style={[styles.colorPresetText, { color: preset.text }]}>
+                  <View
+                    style={[
+                      styles.colorPresetPreview,
+                      { backgroundColor: preset.bg },
+                    ]}
+                  >
+                    <Text
+                      style={[styles.colorPresetText, { color: preset.text }]}
+                    >
                       Aa
                     </Text>
                   </View>
@@ -356,8 +641,8 @@ export default function VisualSettingsScreen() {
                   style={styles.colorInput}
                   value={backgroundColor}
                   onChangeText={setBackgroundColor}
-                  placeholder="#FFFFFF"
-                  editable={isEditing}
+                  placeholder={themeColors.surface}
+                  editable={true}
                 />
               </View>
             </View>
@@ -365,13 +650,15 @@ export default function VisualSettingsScreen() {
             <View style={styles.colorInputRow}>
               <Text style={styles.colorLabel}>Text</Text>
               <View style={styles.colorInputContainer}>
-                <View style={[styles.colorSwatch, { backgroundColor: textColor }]} />
+                <View
+                  style={[styles.colorSwatch, { backgroundColor: textColor }]}
+                />
                 <TextInput
                   style={styles.colorInput}
                   value={textColor}
                   onChangeText={setTextColor}
-                  placeholder="#000000"
-                  editable={isEditing}
+                  placeholder={themeColors.text}
+                  editable={true}
                 />
               </View>
             </View>
@@ -379,13 +666,15 @@ export default function VisualSettingsScreen() {
             <View style={styles.colorInputRow}>
               <Text style={styles.colorLabel}>Border</Text>
               <View style={styles.colorInputContainer}>
-                <View style={[styles.colorSwatch, { backgroundColor: borderColor }]} />
+                <View
+                  style={[styles.colorSwatch, { backgroundColor: borderColor }]}
+                />
                 <TextInput
                   style={styles.colorInput}
                   value={borderColor}
                   onChangeText={setBorderColor}
-                  placeholder="#CCCCCC"
-                  editable={isEditing}
+                  placeholder={themeColors.border}
+                  editable={true}
                 />
               </View>
             </View>
@@ -394,7 +683,7 @@ export default function VisualSettingsScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Preview</Text>
-          
+
           <View style={[styles.previewContainer, { backgroundColor }]}>
             <View style={[styles.previewButton, { borderColor }]}>
               <Text style={[styles.previewButtonText, { color: textColor }]}>
@@ -414,13 +703,13 @@ export default function VisualSettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
+    // backgroundColor will be set dynamically
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: COLORS.PRIMARY,
+    // backgroundColor will be set dynamically
     paddingHorizontal: SPACING.MD,
     paddingVertical: SPACING.SM,
     paddingTop: 50,
@@ -431,7 +720,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: TYPOGRAPHY.FONT_SIZES.TITLE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.SURFACE,
+    // color will be set dynamically
     flex: 1,
     textAlign: 'center',
   },
@@ -448,7 +737,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    // color will be set dynamically
     marginBottom: SPACING.MD,
   },
   themeContainer: {
@@ -458,16 +747,15 @@ const styles = StyleSheet.create({
   themeButton: {
     flex: 1,
     alignItems: 'center',
-    backgroundColor: COLORS.SURFACE,
+    // backgroundColor will be set dynamically
     padding: SPACING.MD,
     marginHorizontal: SPACING.XS,
     borderRadius: BORDER_RADIUS.MEDIUM,
     borderWidth: 1,
-    borderColor: COLORS.BORDER,
+    // borderColor will be set dynamically
   },
   themeButtonActive: {
-    borderColor: COLORS.PRIMARY,
-    backgroundColor: COLORS.PRIMARY + '10',
+    // borderColor and backgroundColor will be set dynamically
   },
   themePreview: {
     width: 40,
@@ -477,7 +765,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: SPACING.SM,
     borderWidth: 1,
-    borderColor: COLORS.BORDER,
+    // borderColor will be set dynamically
   },
   themePreviewText: {
     fontSize: 16,
@@ -486,27 +774,27 @@ const styles = StyleSheet.create({
   themeLabel: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
+    // color will be set dynamically
     marginBottom: SPACING.XS,
   },
   themeLabelActive: {
-    color: COLORS.PRIMARY,
+    // color will be set dynamically
   },
   themeDescription: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    // color will be set dynamically
     textAlign: 'center',
   },
   settingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: COLORS.SURFACE,
+    // backgroundColor will be set dynamically
     padding: SPACING.MD,
     marginBottom: SPACING.SM,
     borderRadius: BORDER_RADIUS.MEDIUM,
     borderWidth: 1,
-    borderColor: COLORS.BORDER,
+    // borderColor will be set dynamically
   },
   settingInfo: {
     flex: 1,
@@ -515,17 +803,17 @@ const styles = StyleSheet.create({
   settingLabel: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
+    // color will be set dynamically
     marginBottom: SPACING.XS,
   },
   settingDescription: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    // color will be set dynamically
     lineHeight: 16,
   },
   settingValue: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.PRIMARY,
+    // color will be set dynamically
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
   },
   settingControl: {
@@ -539,7 +827,7 @@ const styles = StyleSheet.create({
     height: 20,
   },
   sliderThumb: {
-    backgroundColor: COLORS.PRIMARY,
+    // backgroundColor will be set dynamically
   },
   buttonSizeContainer: {
     flexDirection: 'row',
@@ -549,19 +837,18 @@ const styles = StyleSheet.create({
   buttonSizeOption: {
     flex: 1,
     alignItems: 'center',
-    backgroundColor: COLORS.SURFACE,
+    // backgroundColor will be set dynamically
     padding: SPACING.MD,
     marginHorizontal: SPACING.XS,
     borderRadius: BORDER_RADIUS.MEDIUM,
     borderWidth: 1,
-    borderColor: COLORS.BORDER,
+    // borderColor will be set dynamically
   },
   buttonSizeOptionActive: {
-    borderColor: COLORS.PRIMARY,
-    backgroundColor: COLORS.PRIMARY + '10',
+    // borderColor and backgroundColor will be set dynamically
   },
   buttonSizePreview: {
-    backgroundColor: COLORS.PRIMARY,
+    // backgroundColor will be set dynamically
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
@@ -570,20 +857,20 @@ const styles = StyleSheet.create({
   buttonSizePreviewText: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: COLORS.SURFACE,
+    // color will be set dynamically
   },
   buttonSizeLabel: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
+    // color will be set dynamically
     marginBottom: SPACING.XS,
   },
   buttonSizeLabelActive: {
-    color: COLORS.PRIMARY,
+    // color will be set dynamically
   },
   buttonSizeDescription: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    // color will be set dynamically
     textAlign: 'center',
   },
   colorPresets: {
@@ -592,7 +879,7 @@ const styles = StyleSheet.create({
   colorPresetsTitle: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
+    // color will be set dynamically
     marginBottom: SPACING.SM,
   },
   colorPresetsList: {
@@ -612,7 +899,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: SPACING.XS,
     borderWidth: 1,
-    borderColor: COLORS.BORDER,
+    // borderColor will be set dynamically
   },
   colorPresetText: {
     fontSize: 12,
@@ -620,14 +907,14 @@ const styles = StyleSheet.create({
   },
   colorPresetName: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    // color will be set dynamically
   },
   colorInputs: {
-    backgroundColor: COLORS.SURFACE,
+    // backgroundColor will be set dynamically
     padding: SPACING.MD,
     borderRadius: BORDER_RADIUS.MEDIUM,
     borderWidth: 1,
-    borderColor: COLORS.BORDER,
+    // borderColor will be set dynamically
   },
   colorInputRow: {
     flexDirection: 'row',
@@ -636,7 +923,7 @@ const styles = StyleSheet.create({
   },
   colorLabel: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
+    // color will be set dynamically
     width: 80,
   },
   colorInputContainer: {
@@ -649,30 +936,30 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: COLORS.BORDER,
+    // borderColor will be set dynamically
     marginRight: SPACING.SM,
   },
   colorInput: {
     flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
+    // backgroundColor will be set dynamically
     borderWidth: 1,
-    borderColor: COLORS.BORDER,
+    // borderColor will be set dynamically
     borderRadius: BORDER_RADIUS.SMALL,
     paddingHorizontal: SPACING.SM,
     paddingVertical: SPACING.XS,
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_PRIMARY,
+    // color will be set dynamically
   },
   previewContainer: {
-    backgroundColor: COLORS.SURFACE,
+    // backgroundColor will be set dynamically
     padding: SPACING.LG,
     borderRadius: BORDER_RADIUS.MEDIUM,
     borderWidth: 1,
-    borderColor: COLORS.BORDER,
+    // borderColor will be set dynamically
     alignItems: 'center',
   },
   previewButton: {
-    backgroundColor: COLORS.PRIMARY,
+    // backgroundColor will be set dynamically
     paddingHorizontal: SPACING.LG,
     paddingVertical: SPACING.MD,
     borderRadius: BORDER_RADIUS.MEDIUM,
@@ -682,7 +969,7 @@ const styles = StyleSheet.create({
   previewButtonText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
-    color: COLORS.SURFACE,
+    // color will be set dynamically
   },
   previewText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,

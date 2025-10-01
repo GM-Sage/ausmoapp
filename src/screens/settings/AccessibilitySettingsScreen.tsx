@@ -15,12 +15,22 @@ import { useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 
 import { RootState } from '../../store';
-import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../../constants';
-import AccessibilityService, { AccessibilityFeatures } from '../../services/accessibilityService';
+import { TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../../constants';
+import { getThemeColors } from '../../utils/themeUtils';
+import { useVisualSettings } from '../../contexts/VisualSettingsContext';
+import AccessibilityService, {
+  AccessibilityFeatures,
+} from '../../services/accessibilityService';
 
 export default function AccessibilitySettingsScreen() {
+  const { theme } = useVisualSettings();
+  const safeTheme = theme || 'light'; // Ensure theme is never undefined
+  const themeColors = getThemeColors(safeTheme);
+  const styles = getStyles(themeColors);
   const currentUser = useSelector((state: RootState) => state.user.currentUser);
-  const [accessibilityService] = useState(() => AccessibilityService.getInstance());
+  const [accessibilityService] = useState(() =>
+    AccessibilityService.getInstance()
+  );
   const [features, setFeatures] = useState<AccessibilityFeatures | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
@@ -61,7 +71,10 @@ export default function AccessibilitySettingsScreen() {
     accessibilityService.updateSettings(updatedFeatures);
   };
 
-  const updateScreenReaderSetting = (setting: keyof NonNullable<typeof features>['screenReader'], value: any) => {
+  const updateScreenReaderSetting = (
+    setting: keyof NonNullable<typeof features>['screenReader'],
+    value: any
+  ) => {
     if (!features?.screenReader) return;
 
     const updatedFeatures = { ...features };
@@ -70,7 +83,10 @@ export default function AccessibilitySettingsScreen() {
     accessibilityService.updateSettings(updatedFeatures);
   };
 
-  const updateGestureSetting = (setting: keyof NonNullable<typeof features>['gestures'], value: any) => {
+  const updateGestureSetting = (
+    setting: keyof NonNullable<typeof features>['gestures'],
+    value: any
+  ) => {
     if (!features?.gestures) return;
 
     const updatedFeatures = { ...features };
@@ -79,7 +95,10 @@ export default function AccessibilitySettingsScreen() {
     accessibilityService.updateSettings(updatedFeatures);
   };
 
-  const updateOneHandedSetting = (setting: keyof NonNullable<typeof features>['oneHanded'], value: any) => {
+  const updateOneHandedSetting = (
+    setting: keyof NonNullable<typeof features>['oneHanded'],
+    value: any
+  ) => {
     if (!features?.oneHanded) return;
 
     const updatedFeatures = { ...features };
@@ -92,7 +111,7 @@ export default function AccessibilitySettingsScreen() {
     try {
       setIsTesting(true);
       const results = await accessibilityService.testAccessibility();
-      
+
       const enabledFeatures = Object.entries(results)
         .filter(([_, enabled]) => enabled)
         .map(([feature, _]) => feature)
@@ -100,7 +119,9 @@ export default function AccessibilitySettingsScreen() {
 
       Alert.alert(
         'Accessibility Test Results',
-        enabledFeatures ? `Enabled features: ${enabledFeatures}` : 'No accessibility features are currently enabled',
+        enabledFeatures
+          ? `Enabled features: ${enabledFeatures}`
+          : 'No accessibility features are currently enabled',
         [{ text: 'OK' }]
       );
     } catch (error) {
@@ -113,7 +134,7 @@ export default function AccessibilitySettingsScreen() {
 
   const handleGetRecommendations = () => {
     const recommendations = accessibilityService.getRecommendations();
-    
+
     if (recommendations.length === 0) {
       Alert.alert('Recommendations', 'Your accessibility settings look good!');
     } else {
@@ -141,13 +162,15 @@ export default function AccessibilitySettingsScreen() {
     <View style={styles.settingItem}>
       <View style={styles.settingContent}>
         <Text style={styles.settingLabel}>{label}</Text>
-        {description && <Text style={styles.settingDescription}>{description}</Text>}
+        {description && (
+          <Text style={styles.settingDescription}>{description}</Text>
+        )}
       </View>
       <Switch
         value={value}
         onValueChange={onValueChange}
-        trackColor={{ false: COLORS.BORDER, true: COLORS.PRIMARY }}
-        thumbColor={value ? COLORS.SURFACE : COLORS.TEXT_SECONDARY}
+        trackColor={{ false: themeColors.border, true: themeColors.primary }}
+        thumbColor={value ? themeColors.surface : themeColors.textSecondary}
       />
     </View>
   );
@@ -168,13 +191,13 @@ export default function AccessibilitySettingsScreen() {
           style={styles.sliderButton}
           onPress={() => onValueChange(Math.max(min, value - step))}
         >
-          <Ionicons name="remove" size={16} color={COLORS.PRIMARY} />
+          <Ionicons name="remove" size={16} color={themeColors.primary} />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.sliderButton}
           onPress={() => onValueChange(Math.min(max, value + step))}
         >
-          <Ionicons name="add" size={16} color={COLORS.PRIMARY} />
+          <Ionicons name="add" size={16} color={themeColors.primary} />
         </TouchableOpacity>
       </View>
     </View>
@@ -194,14 +217,16 @@ export default function AccessibilitySettingsScreen() {
             key={`${option.value}-${index}`}
             style={[
               styles.pickerOption,
-              value === option.value && styles.pickerOptionSelected
+              value === option.value && styles.pickerOptionSelected,
             ]}
             onPress={() => onValueChange(option.value)}
           >
-            <Text style={[
-              styles.pickerOptionText,
-              value === option.value && styles.pickerOptionTextSelected
-            ]}>
+            <Text
+              style={[
+                styles.pickerOptionText,
+                value === option.value && styles.pickerOptionTextSelected,
+              ]}
+            >
               {option.label}
             </Text>
           </TouchableOpacity>
@@ -213,8 +238,10 @@ export default function AccessibilitySettingsScreen() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.PRIMARY} />
-        <Text style={styles.loadingText}>Loading accessibility settings...</Text>
+        <ActivityIndicator size="large" color={themeColors.primary} />
+        <Text style={styles.loadingText}>
+          Loading accessibility settings...
+        </Text>
       </View>
     );
   }
@@ -222,86 +249,93 @@ export default function AccessibilitySettingsScreen() {
   if (!features) {
     return (
       <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>Failed to load accessibility settings</Text>
+        <Text style={styles.errorText}>
+          Failed to load accessibility settings
+        </Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Screen Reader Section */}
-        {renderSection('Screen Reader', (
+        {renderSection(
+          'Screen Reader',
           <>
             {renderSwitch(
               'Enable Screen Reader',
               features.screenReader.enabled,
-              (value) => updateScreenReaderSetting('enabled', value),
+              value => updateScreenReaderSetting('enabled', value),
               'Announce button presses and page changes'
             )}
             {renderSwitch(
               'Announce Button Presses',
               features.screenReader.announceButtonPress,
-              (value) => updateScreenReaderSetting('announceButtonPress', value)
+              value => updateScreenReaderSetting('announceButtonPress', value)
             )}
             {renderSwitch(
               'Announce Page Changes',
               features.screenReader.announcePageChanges,
-              (value) => updateScreenReaderSetting('announcePageChanges', value)
+              value => updateScreenReaderSetting('announcePageChanges', value)
             )}
             {renderSwitch(
               'Announce Scanning',
               features.screenReader.announceScanning,
-              (value) => updateScreenReaderSetting('announceScanning', value)
+              value => updateScreenReaderSetting('announceScanning', value)
             )}
             {renderSwitch(
               'Announce Context',
               features.screenReader.announceContext,
-              (value) => updateScreenReaderSetting('announceContext', value)
+              value => updateScreenReaderSetting('announceContext', value)
             )}
             {renderSwitch(
               'Announce Suggestions',
               features.screenReader.announceSuggestions,
-              (value) => updateScreenReaderSetting('announceSuggestions', value)
+              value => updateScreenReaderSetting('announceSuggestions', value)
             )}
             {renderSlider(
               'Speech Rate',
               features.screenReader.speechRate,
-              (value) => updateScreenReaderSetting('speechRate', value),
-              0.1, 2.0
+              value => updateScreenReaderSetting('speechRate', value),
+              0.1,
+              2.0
             )}
             {renderSlider(
               'Speech Pitch',
               features.screenReader.speechPitch,
-              (value) => updateScreenReaderSetting('speechPitch', value),
-              0.1, 2.0
+              value => updateScreenReaderSetting('speechPitch', value),
+              0.1,
+              2.0
             )}
             {renderSlider(
               'Speech Volume',
               features.screenReader.speechVolume,
-              (value) => updateScreenReaderSetting('speechVolume', value),
-              0.0, 1.0
+              value => updateScreenReaderSetting('speechVolume', value),
+              0.0,
+              1.0
             )}
           </>
-        ))}
+        )}
 
         {/* Gestures Section */}
-        {renderSection('Gestures', (
+        {renderSection(
+          'Gestures',
           <>
             {renderSwitch(
               'Enable Gestures',
               features.gestures.enabled,
-              (value) => updateGestureSetting('enabled', value),
+              value => updateGestureSetting('enabled', value),
               'Use swipe and tap gestures for navigation'
             )}
             {renderPicker(
               'Swipe Up',
               features.gestures.swipeUp,
-              (value) => updateGestureSetting('swipeUp', value),
+              value => updateGestureSetting('swipeUp', value),
               [
                 { label: 'None', value: 'none' },
                 { label: 'Home', value: 'home' },
@@ -313,7 +347,7 @@ export default function AccessibilitySettingsScreen() {
             {renderPicker(
               'Swipe Down',
               features.gestures.swipeDown,
-              (value) => updateGestureSetting('swipeDown', value),
+              value => updateGestureSetting('swipeDown', value),
               [
                 { label: 'None', value: 'none' },
                 { label: 'Home', value: 'home' },
@@ -325,7 +359,7 @@ export default function AccessibilitySettingsScreen() {
             {renderPicker(
               'Double Tap',
               features.gestures.doubleTap,
-              (value) => updateGestureSetting('doubleTap', value),
+              value => updateGestureSetting('doubleTap', value),
               [
                 { label: 'None', value: 'none' },
                 { label: 'Speak', value: 'speak' },
@@ -336,7 +370,7 @@ export default function AccessibilitySettingsScreen() {
             {renderPicker(
               'Long Press',
               features.gestures.longPress,
-              (value) => updateGestureSetting('longPress', value),
+              value => updateGestureSetting('longPress', value),
               [
                 { label: 'None', value: 'none' },
                 { label: 'Menu', value: 'menu' },
@@ -345,21 +379,22 @@ export default function AccessibilitySettingsScreen() {
               ]
             )}
           </>
-        ))}
+        )}
 
         {/* One-Handed Mode Section */}
-        {renderSection('One-Handed Mode', (
+        {renderSection(
+          'One-Handed Mode',
           <>
             {renderSwitch(
               'Enable One-Handed Mode',
               features.oneHanded.enabled,
-              (value) => updateOneHandedSetting('enabled', value),
+              value => updateOneHandedSetting('enabled', value),
               'Optimize layout for single-hand use'
             )}
             {renderPicker(
               'Hand Preference',
               features.oneHanded.mode,
-              (value) => updateOneHandedSetting('mode', value),
+              value => updateOneHandedSetting('mode', value),
               [
                 { label: 'Auto', value: 'auto' },
                 { label: 'Left', value: 'left' },
@@ -369,7 +404,7 @@ export default function AccessibilitySettingsScreen() {
             {renderPicker(
               'Button Size',
               features.oneHanded.buttonSize,
-              (value) => updateOneHandedSetting('buttonSize', value),
+              value => updateOneHandedSetting('buttonSize', value),
               [
                 { label: 'Small', value: 'small' },
                 { label: 'Medium', value: 'medium' },
@@ -380,7 +415,7 @@ export default function AccessibilitySettingsScreen() {
             {renderPicker(
               'Spacing',
               features.oneHanded.spacing,
-              (value) => updateOneHandedSetting('spacing', value),
+              value => updateOneHandedSetting('spacing', value),
               [
                 { label: 'Compact', value: 'compact' },
                 { label: 'Normal', value: 'normal' },
@@ -390,71 +425,73 @@ export default function AccessibilitySettingsScreen() {
             {renderSwitch(
               'Reach Assist',
               features.oneHanded.reachAssist,
-              (value) => updateOneHandedSetting('reachAssist', value),
+              value => updateOneHandedSetting('reachAssist', value),
               'Help reach buttons at the top of the screen'
             )}
             {renderSwitch(
               'Thumb Zone',
               features.oneHanded.thumbZone,
-              (value) => updateOneHandedSetting('thumbZone', value),
+              value => updateOneHandedSetting('thumbZone', value),
               'Optimize button placement for thumb reach'
             )}
           </>
-        ))}
+        )}
 
         {/* Visual Accessibility Section */}
-        {renderSection('Visual Accessibility', (
+        {renderSection(
+          'Visual Accessibility',
           <>
             {renderSwitch(
               'High Contrast',
               features.highContrast,
-              (value) => updateFeature('highContrast', value),
+              value => updateFeature('highContrast', value),
               'Increase contrast for better visibility'
             )}
             {renderSwitch(
               'Large Text',
               features.largeText,
-              (value) => updateFeature('largeText', value),
+              value => updateFeature('largeText', value),
               'Use larger text throughout the app'
             )}
             {renderSwitch(
               'Color Blind Support',
               features.colorBlindSupport,
-              (value) => updateFeature('colorBlindSupport', value),
+              value => updateFeature('colorBlindSupport', value),
               'Use colorblind-friendly color schemes'
             )}
             {renderSwitch(
               'Reduce Motion',
               features.reduceMotion,
-              (value) => updateFeature('reduceMotion', value),
+              value => updateFeature('reduceMotion', value),
               'Minimize animations and transitions'
             )}
           </>
-        ))}
+        )}
 
         {/* Motor Accessibility Section */}
-        {renderSection('Motor Accessibility', (
+        {renderSection(
+          'Motor Accessibility',
           <>
             {renderSwitch(
               'Voice Control',
               features.voiceControl,
-              (value) => updateFeature('voiceControl', value),
+              value => updateFeature('voiceControl', value),
               'Control the app using voice commands'
             )}
             {renderSwitch(
               'Switch Control',
               features.switchControl,
-              (value) => updateFeature('switchControl', value),
+              value => updateFeature('switchControl', value),
               'Use external switches for navigation'
             )}
             {renderSwitch(
               'Assistive Touch',
               features.assistiveTouch,
-              (value) => updateFeature('assistiveTouch', value),
+              value => updateFeature('assistiveTouch', value),
               'Use assistive touch for easier interaction'
             )}
           </>
-        ))}
+        )}
 
         {/* Action Buttons */}
         <View style={styles.actionSection}>
@@ -464,9 +501,13 @@ export default function AccessibilitySettingsScreen() {
             disabled={isTesting}
           >
             {isTesting ? (
-              <ActivityIndicator size="small" color={COLORS.SURFACE} />
+              <ActivityIndicator size="small" color={themeColors.surface} />
             ) : (
-              <Ionicons name="checkmark-circle" size={20} color={COLORS.SURFACE} />
+              <Ionicons
+                name="checkmark-circle"
+                size={20}
+                color={themeColors.surface}
+              />
             )}
             <Text style={styles.actionButtonText}>
               {isTesting ? 'Testing...' : 'Test Accessibility'}
@@ -477,148 +518,157 @@ export default function AccessibilitySettingsScreen() {
             style={[styles.actionButton, styles.recommendationsButton]}
             onPress={handleGetRecommendations}
           >
-            <Ionicons name="bulb" size={20} color={COLORS.SURFACE} />
+            <Ionicons name="bulb" size={20} color={themeColors.surface} />
             <Text style={styles.actionButtonText}>Get Recommendations</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
     </View>
   );
+
+  const getStyles = (themeColors: any) => StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: themeColors.background,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: themeColors.background,
+    },
+    loadingText: {
+      fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
+      color: themeColors.textSecondary,
+      marginTop: SPACING.MD,
+    },
+    content: {
+      flex: 1,
+    },
+    section: {
+      marginBottom: SPACING.LG,
+    },
+    sectionTitle: {
+      fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
+      fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
+      color: themeColors.text,
+      marginBottom: SPACING.MD,
+    },
+    settingRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      backgroundColor: themeColors.surface,
+      borderRadius: BORDER_RADIUS.MD,
+      padding: SPACING.MD,
+      marginBottom: SPACING.SM,
+    },
+    settingInfo: {
+      flex: 1,
+    },
+    settingLabel: {
+      fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
+      fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
+      color: themeColors.text,
+      marginBottom: SPACING.XS,
+    },
+    settingDescription: {
+      fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
+      color: themeColors.textSecondary,
+    },
+    switchContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.SM,
+    },
+    switchLabel: {
+      fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
+      color: themeColors.text,
+    },
+    settingItem: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      backgroundColor: themeColors.surface,
+      borderRadius: BORDER_RADIUS.MD,
+      padding: SPACING.MD,
+      marginBottom: SPACING.SM,
+    },
+    settingContent: {
+      flex: 1,
+    },
+    sliderContainer: {
+      marginVertical: SPACING.SM,
+    },
+    sliderValue: {
+      fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
+      color: themeColors.textSecondary,
+      textAlign: 'center',
+      marginTop: SPACING.XS,
+    },
+    sliderButton: {
+      backgroundColor: themeColors.primary,
+      borderRadius: BORDER_RADIUS.SM,
+      paddingHorizontal: SPACING.SM,
+      paddingVertical: SPACING.XS,
+    },
+    pickerContainer: {
+      marginVertical: SPACING.SM,
+    },
+    pickerOption: {
+      backgroundColor: themeColors.surface,
+      borderRadius: BORDER_RADIUS.SM,
+      padding: SPACING.SM,
+      marginBottom: SPACING.XS,
+    },
+    pickerOptionSelected: {
+      backgroundColor: themeColors.primary,
+    },
+    pickerOptionText: {
+      fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
+      color: themeColors.text,
+    },
+    pickerOptionTextSelected: {
+      color: themeColors.surface,
+    },
+    errorContainer: {
+      backgroundColor: themeColors.error,
+      borderRadius: BORDER_RADIUS.SM,
+      padding: SPACING.SM,
+      marginVertical: SPACING.XS,
+    },
+    errorText: {
+      fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
+      color: themeColors.surface,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    scrollContent: {
+      padding: SPACING.MD,
+    },
+    actionSection: {
+      marginTop: SPACING.LG,
+    },
+    actionButton: {
+      backgroundColor: themeColors.primary,
+      borderRadius: BORDER_RADIUS.MD,
+      padding: SPACING.MD,
+      alignItems: 'center',
+      marginBottom: SPACING.SM,
+    },
+    testButton: {
+      backgroundColor: themeColors.secondary,
+    },
+    recommendationsButton: {
+      backgroundColor: themeColors.info,
+    },
+    actionButtonText: {
+      fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
+      fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
+      color: themeColors.surface,
+      marginTop: SPACING.XS,
+    },
+  });
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.BACKGROUND,
-  },
-  loadingText: {
-    fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_SECONDARY,
-    marginTop: SPACING.MD,
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.BACKGROUND,
-  },
-  errorText: {
-    fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.ERROR,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: SPACING.MD,
-  },
-  section: {
-    backgroundColor: COLORS.SURFACE,
-    borderRadius: BORDER_RADIUS.MD,
-    padding: SPACING.MD,
-    marginBottom: SPACING.MD,
-  },
-  sectionTitle: {
-    fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
-    fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
-    marginBottom: SPACING.MD,
-  },
-  settingItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: SPACING.SM,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.BORDER,
-  },
-  settingContent: {
-    flex: 1,
-    marginRight: SPACING.MD,
-  },
-  settingLabel: {
-    fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
-  },
-  settingDescription: {
-    fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
-    marginTop: SPACING.XS,
-  },
-  sliderContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.SM,
-  },
-  sliderValue: {
-    fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_PRIMARY,
-    minWidth: 30,
-    textAlign: 'center',
-  },
-  sliderButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.SURFACE,
-    borderWidth: 1,
-    borderColor: COLORS.PRIMARY,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  pickerContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: SPACING.XS,
-  },
-  pickerOption: {
-    paddingHorizontal: SPACING.SM,
-    paddingVertical: SPACING.XS,
-    borderRadius: BORDER_RADIUS.SM,
-    borderWidth: 1,
-    borderColor: COLORS.BORDER,
-    backgroundColor: COLORS.SURFACE,
-  },
-  pickerOptionSelected: {
-    backgroundColor: COLORS.PRIMARY,
-    borderColor: COLORS.PRIMARY,
-  },
-  pickerOptionText: {
-    fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_PRIMARY,
-  },
-  pickerOptionTextSelected: {
-    color: COLORS.SURFACE,
-  },
-  actionSection: {
-    marginTop: SPACING.LG,
-    gap: SPACING.MD,
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: SPACING.MD,
-    paddingHorizontal: SPACING.LG,
-    borderRadius: BORDER_RADIUS.MD,
-    gap: SPACING.SM,
-  },
-  testButton: {
-    backgroundColor: COLORS.PRIMARY,
-  },
-  recommendationsButton: {
-    backgroundColor: COLORS.WARNING,
-  },
-  actionButtonText: {
-    fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.SURFACE,
-  },
-});

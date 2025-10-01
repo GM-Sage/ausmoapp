@@ -1,20 +1,22 @@
 // Library Screen
 
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  FlatList, 
-  TouchableOpacity, 
-  Alert 
+import { getThemeColors } from '../../utils/themeUtils';
+import { useVisualSettings } from '../../contexts/VisualSettingsContext';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 
 import { RootState } from '../../store';
 import { CommunicationBook } from '../../types';
-import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../../constants';
+import { TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../../constants';
 import DatabaseService from '../../services/databaseService';
 import { navigateToPage } from '../../store/slices/navigationSlice';
 
@@ -23,6 +25,9 @@ interface LibraryScreenProps {
 }
 
 export default function LibraryScreen({ navigation }: LibraryScreenProps) {
+  const { theme } = useVisualSettings();
+  const safeTheme = theme || 'light'; // Ensure theme is never undefined
+  const themeColors = getThemeColors(safeTheme);
   const dispatch = useDispatch();
   const currentUser = useSelector((state: RootState) => state.user.currentUser);
   const [books, setBooks] = useState<CommunicationBook[]>([]);
@@ -46,7 +51,7 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
       console.log('No current user, skipping book load');
       return;
     }
-    
+
     try {
       setIsLoading(true);
       console.log('Loading books for user:', currentUser.id);
@@ -66,19 +71,20 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
       Alert.alert('No Pages', 'This book has no pages. Add some pages first.');
       return;
     }
-    
+
     // Navigate to the first page of the book
     const firstPage = book.pages[0];
-    dispatch(navigateToPage({
-      bookId: book.id,
-      pageId: firstPage.id,
-      pageName: firstPage.name,
-    }));
-    
+    dispatch(
+      navigateToPage({
+        bookId: book.id,
+        pageId: firstPage.id,
+        pageName: firstPage.name,
+      })
+    );
+
     // Navigate to communication screen
     navigation.navigate('Communication');
   };
-
 
   const renderBookItem = ({ item }: { item: CommunicationBook }) => (
     <View style={styles.bookItem}>
@@ -92,7 +98,7 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
         accessibilityRole="button"
       >
         <View style={styles.bookIcon}>
-          <Ionicons name="book" size={32} color={COLORS.PRIMARY} />
+          <Ionicons name="book" size={32} color={themeColors.primary} />
         </View>
         <View style={styles.bookInfo}>
           <Text style={styles.bookName}>{item.name}</Text>
@@ -103,9 +109,13 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
             {item.pages.length} pages • {item.category}
           </Text>
         </View>
-        <Ionicons name="chevron-forward" size={24} color={COLORS.TEXT_SECONDARY} />
+        <Ionicons
+          name="chevron-forward"
+          size={24}
+          color={themeColors.textSecondary}
+        />
       </TouchableOpacity>
-      
+
       {/* Start Communication Button */}
       <TouchableOpacity
         style={styles.startButton}
@@ -114,7 +124,7 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
         accessibilityLabel={`Start communication with ${item.name}`}
         accessibilityRole="button"
       >
-        <Ionicons name="play" size={20} color={COLORS.SURFACE} />
+        <Ionicons name="play" size={20} color={themeColors.surface} />
         <Text style={styles.startButtonText}>Start</Text>
       </TouchableOpacity>
     </View>
@@ -122,7 +132,7 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
-      <Ionicons name="library" size={64} color={COLORS.TEXT_SECONDARY} />
+      <Ionicons name="library" size={64} color={themeColors.textSecondary} />
       <Text style={styles.emptyTitle}>No Books Yet</Text>
       <Text style={styles.emptyDescription}>
         Create your first communication book to get started
@@ -144,7 +154,7 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
       <View style={styles.header}>
         <Text style={styles.title}>My Books</Text>
         <View style={styles.headerButtons}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.headerButton}
             onPress={() => {
               navigation.navigate('TemplateGallery');
@@ -153,9 +163,20 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
             accessibilityLabel="Open template gallery"
             accessibilityRole="button"
           >
-            <Ionicons name="library" size={20} color={COLORS.SURFACE} />
+            <Ionicons name="library" size={20} color={themeColors.surface} />
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={() => {
+              navigation.navigate('SyncedButtonLibrary');
+            }}
+            accessible={true}
+            accessibilityLabel="Open synced button library"
+            accessibilityRole="button"
+          >
+            <Ionicons name="sync" size={20} color={themeColors.surface} />
+          </TouchableOpacity>
+          <TouchableOpacity
             style={styles.headerButton}
             onPress={() => {
               navigation.navigate('SymbolLibrary');
@@ -164,9 +185,9 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
             accessibilityLabel="Open symbol library"
             accessibilityRole="button"
           >
-            <Ionicons name="images" size={20} color={COLORS.SURFACE} />
+            <Ionicons name="images" size={20} color={themeColors.surface} />
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.addButton}
             onPress={() => {
               navigation.navigate('BookEditor');
@@ -175,7 +196,7 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
             accessibilityLabel="Create new book"
             accessibilityRole="button"
           >
-            <Ionicons name="add" size={24} color={COLORS.SURFACE} />
+            <Ionicons name="add" size={24} color={themeColors.surface} />
           </TouchableOpacity>
         </View>
       </View>
@@ -184,7 +205,7 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
       <FlatList
         data={books}
         renderItem={renderBookItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={item => item.id}
         contentContainerStyle={styles.listContainer}
         ListEmptyComponent={renderEmptyState}
         showsVerticalScrollIndicator={false}
@@ -196,13 +217,13 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: themeColors.background,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: COLORS.PRIMARY,
+    backgroundColor: themeColors.primary,
     paddingHorizontal: SPACING.MD,
     paddingVertical: SPACING.SM,
     paddingTop: 50, // Account for status bar
@@ -210,7 +231,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: TYPOGRAPHY.FONT_SIZES.TITLE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.SURFACE,
+    color: themeColors.surface,
   },
   headerButtons: {
     flexDirection: 'row',
@@ -218,7 +239,7 @@ const styles = StyleSheet.create({
     gap: SPACING.SM,
   },
   headerButton: {
-    backgroundColor: COLORS.SECONDARY,
+    backgroundColor: themeColors.secondary,
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -226,7 +247,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   addButton: {
-    backgroundColor: COLORS.SECONDARY,
+    backgroundColor: themeColors.secondary,
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -239,10 +260,10 @@ const styles = StyleSheet.create({
     paddingTop: SPACING.MD,
   },
   bookItem: {
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     marginBottom: SPACING.SM,
     borderRadius: BORDER_RADIUS.MEDIUM,
-    shadowColor: COLORS.TEXT_PRIMARY,
+    shadowColor: themeColors.text_PRIMARY,
     shadowOffset: {
       width: 0,
       height: 2,
@@ -261,7 +282,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: themeColors.background,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: SPACING.MD,
@@ -272,17 +293,17 @@ const styles = StyleSheet.create({
   bookName: {
     fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginBottom: 2,
   },
   bookDescription: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
     marginBottom: 2,
   },
   bookDetails: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
   emptyState: {
     flex: 1,
@@ -293,19 +314,19 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginTop: SPACING.MD,
     marginBottom: SPACING.SM,
   },
   emptyDescription: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
     textAlign: 'center',
     lineHeight: TYPOGRAPHY.LINE_HEIGHTS.NORMAL * TYPOGRAPHY.FONT_SIZES.MEDIUM,
   },
   loadingText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
     textAlign: 'center',
     marginTop: SPACING.XL,
   },
@@ -313,7 +334,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.PRIMARY,
+    backgroundColor: themeColors.primary,
     paddingVertical: SPACING.SM,
     paddingHorizontal: SPACING.MD,
     gap: SPACING.XS,
@@ -321,6 +342,6 @@ const styles = StyleSheet.create({
   startButtonText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.SURFACE,
+    color: themeColors.surface,
   },
 });

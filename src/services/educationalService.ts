@@ -57,7 +57,11 @@ export interface Assessment {
 
 export interface AssessmentQuestion {
   id: string;
-  type: 'symbol_recognition' | 'word_completion' | 'sentence_building' | 'context_usage';
+  type:
+    | 'symbol_recognition'
+    | 'word_completion'
+    | 'sentence_building'
+    | 'context_usage';
   symbolId: string;
   question: string;
   options: string[];
@@ -163,7 +167,18 @@ class EducationalService {
         description: 'Essential words for daily communication',
         level: 'beginner',
         ageRange: { min: 3, max: 8 },
-        symbols: ['hello', 'help', 'yes', 'no', 'more', 'done', 'please', 'thank-you', 'sorry', 'goodbye'],
+        symbols: [
+          'hello',
+          'help',
+          'yes',
+          'no',
+          'more',
+          'done',
+          'please',
+          'thank-you',
+          'sorry',
+          'goodbye',
+        ],
         categories: ['Greetings', 'Communication', 'Actions'],
         isBuiltIn: true,
         createdAt: new Date(),
@@ -175,7 +190,18 @@ class EducationalService {
         description: 'Expanded vocabulary for more complex communication',
         level: 'intermediate',
         ageRange: { min: 6, max: 12 },
-        symbols: ['I-want', 'I-need', 'I-like', 'I-dont-like', 'can-you-help', 'how-are-you', 'good-morning', 'good-afternoon', 'good-evening', 'good-night'],
+        symbols: [
+          'I-want',
+          'I-need',
+          'I-like',
+          'I-dont-like',
+          'can-you-help',
+          'how-are-you',
+          'good-morning',
+          'good-afternoon',
+          'good-evening',
+          'good-night',
+        ],
         categories: ['Greetings', 'Communication', 'Feelings', 'Requests'],
         isBuiltIn: true,
         createdAt: new Date(),
@@ -187,7 +213,18 @@ class EducationalService {
         description: 'Complex vocabulary for sophisticated communication',
         level: 'advanced',
         ageRange: { min: 10, max: 18 },
-        symbols: ['I-think', 'I-believe', 'I-hope', 'I-wish', 'maybe', 'probably', 'definitely', 'perhaps', 'certainly', 'absolutely'],
+        symbols: [
+          'I-think',
+          'I-believe',
+          'I-hope',
+          'I-wish',
+          'maybe',
+          'probably',
+          'definitely',
+          'perhaps',
+          'certainly',
+          'absolutely',
+        ],
         categories: ['Communication', 'Thinking', 'Opinions', 'Possibility'],
         isBuiltIn: true,
         createdAt: new Date(),
@@ -199,7 +236,18 @@ class EducationalService {
         description: 'Essential words for school and learning',
         level: 'beginner',
         ageRange: { min: 5, max: 10 },
-        symbols: ['book', 'pencil', 'paper', 'teacher', 'student', 'classroom', 'homework', 'test', 'grade', 'learn'],
+        symbols: [
+          'book',
+          'pencil',
+          'paper',
+          'teacher',
+          'student',
+          'classroom',
+          'homework',
+          'test',
+          'grade',
+          'learn',
+        ],
         categories: ['School', 'Learning', 'Objects'],
         isBuiltIn: true,
         createdAt: new Date(),
@@ -211,7 +259,18 @@ class EducationalService {
         description: 'Words for social interaction and relationships',
         level: 'beginner',
         ageRange: { min: 4, max: 10 },
-        symbols: ['friend', 'family', 'mom', 'dad', 'brother', 'sister', 'play', 'share', 'together', 'fun'],
+        symbols: [
+          'friend',
+          'family',
+          'mom',
+          'dad',
+          'brother',
+          'sister',
+          'play',
+          'share',
+          'together',
+          'fun',
+        ],
         categories: ['Family', 'Friends', 'Social'],
         isBuiltIn: true,
         createdAt: new Date(),
@@ -220,17 +279,30 @@ class EducationalService {
     ];
   }
 
-  async getVocabularyProgress(userId: string, vocabularySetId: string): Promise<VocabularyProgress | null> {
+  async getVocabularyProgress(
+    userId: string,
+    vocabularySetId: string
+  ): Promise<VocabularyProgress | null> {
     try {
       // In a real app, this would load from database
-      const vocabularySet = (await this.getCoreVocabularySets()).find(set => set.id === vocabularySetId);
+      const vocabularySet = (await this.getCoreVocabularySets()).find(
+        set => set.id === vocabularySetId
+      );
       if (!vocabularySet) return null;
 
       // Simulate progress data
       const totalSymbols = vocabularySet.symbols.length;
-      const masteredSymbols = vocabularySet.symbols.slice(0, Math.floor(totalSymbols * 0.6));
-      const learningSymbols = vocabularySet.symbols.slice(masteredSymbols.length, Math.floor(totalSymbols * 0.8));
-      const notStartedSymbols = vocabularySet.symbols.slice(masteredSymbols.length + learningSymbols.length);
+      const masteredSymbols = vocabularySet.symbols.slice(
+        0,
+        Math.floor(totalSymbols * 0.6)
+      );
+      const learningSymbols = vocabularySet.symbols.slice(
+        masteredSymbols.length,
+        Math.floor(totalSymbols * 0.8)
+      );
+      const notStartedSymbols = vocabularySet.symbols.slice(
+        masteredSymbols.length + learningSymbols.length
+      );
 
       return {
         userId,
@@ -257,13 +329,18 @@ class EducationalService {
     type: Assessment['type'] = 'progress'
   ): Promise<Assessment> {
     try {
-      const vocabularySet = (await this.getCoreVocabularySets()).find(set => set.id === vocabularySetId);
+      const vocabularySet = (await this.getCoreVocabularySets()).find(
+        set => set.id === vocabularySetId
+      );
       if (!vocabularySet) {
         throw new Error('Vocabulary set not found');
       }
 
-      const questions = await this.generateAssessmentQuestions(vocabularySet, type);
-      
+      const questions = await this.generateAssessmentQuestions(
+        vocabularySet,
+        type
+      );
+
       const assessment: Assessment = {
         id: `assessment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         userId,
@@ -301,7 +378,12 @@ class EducationalService {
   ): Promise<void> {
     try {
       // In a real app, this would update the assessment in the database
-      console.log('Assessment answer submitted:', { assessmentId, questionId, answer, timeSpent });
+      console.log('Assessment answer submitted:', {
+        assessmentId,
+        questionId,
+        answer,
+        timeSpent,
+      });
     } catch (error) {
       console.error('Error submitting assessment answer:', error);
     }
@@ -374,7 +456,11 @@ class EducationalService {
     }
   }
 
-  async updateGoalProgress(goalId: string, milestoneId: string, progress: number): Promise<void> {
+  async updateGoalProgress(
+    goalId: string,
+    milestoneId: string,
+    progress: number
+  ): Promise<void> {
     try {
       // In a real app, this would update the goal in the database
       console.log('Goal progress updated:', { goalId, milestoneId, progress });
@@ -443,7 +529,13 @@ class EducationalService {
         type: 'conversation',
         difficulty: 'hard',
         duration: 20,
-        symbols: ['hello', 'how-are-you', 'good-morning', 'goodbye', 'nice-to-meet-you'],
+        symbols: [
+          'hello',
+          'how-are-you',
+          'good-morning',
+          'goodbye',
+          'nice-to-meet-you',
+        ],
         categories: ['Social', 'Communication'],
         ageRange: { min: 8, max: 16 },
         learningObjectives: ['Social communication', 'Conversation skills'],
@@ -463,23 +555,30 @@ class EducationalService {
     let filteredActivities = activities;
 
     if (filters?.type) {
-      filteredActivities = filteredActivities.filter(activity => activity.type === filters.type);
+      filteredActivities = filteredActivities.filter(
+        activity => activity.type === filters.type
+      );
     }
 
     if (filters?.difficulty) {
-      filteredActivities = filteredActivities.filter(activity => activity.difficulty === filters.difficulty);
+      filteredActivities = filteredActivities.filter(
+        activity => activity.difficulty === filters.difficulty
+      );
     }
 
     if (filters?.ageRange) {
-      filteredActivities = filteredActivities.filter(activity => 
-        activity.ageRange.min <= filters.ageRange!.max && 
-        activity.ageRange.max >= filters.ageRange!.min
+      filteredActivities = filteredActivities.filter(
+        activity =>
+          activity.ageRange.min <= filters.ageRange!.max &&
+          activity.ageRange.max >= filters.ageRange!.min
       );
     }
 
     if (filters?.categories && filters.categories.length > 0) {
       filteredActivities = filteredActivities.filter(activity =>
-        activity.categories.some(category => filters.categories!.includes(category))
+        activity.categories.some(category =>
+          filters.categories!.includes(category)
+        )
       );
     }
 
@@ -487,9 +586,15 @@ class EducationalService {
   }
 
   // Progressive Vocabulary Building
-  async getNextLearningSymbols(userId: string, vocabularySetId: string): Promise<string[]> {
+  async getNextLearningSymbols(
+    userId: string,
+    vocabularySetId: string
+  ): Promise<string[]> {
     try {
-      const progress = await this.getVocabularyProgress(userId, vocabularySetId);
+      const progress = await this.getVocabularyProgress(
+        userId,
+        vocabularySetId
+      );
       if (!progress) return [];
 
       // Return symbols that are not yet mastered
@@ -508,7 +613,12 @@ class EducationalService {
   ): Promise<void> {
     try {
       // In a real app, this would update the progress in the database
-      console.log('Symbol mastery updated:', { userId, vocabularySetId, symbolId, isMastered });
+      console.log('Symbol mastery updated:', {
+        userId,
+        vocabularySetId,
+        symbolId,
+        isMastered,
+      });
     } catch (error) {
       console.error('Error updating symbol mastery:', error);
     }
@@ -547,7 +657,10 @@ class EducationalService {
           options: [symbol.name, 'Help', 'More', 'Done'],
           correctAnswer: symbol.name,
           timeSpent: 0,
-          hints: [`Think about when you use this word`, `It starts with "${symbol.name[0]}"`],
+          hints: [
+            `Think about when you use this word`,
+            `It starts with "${symbol.name[0]}"`,
+          ],
           usedHints: 0,
         });
       }
@@ -562,7 +675,12 @@ class EducationalService {
           type: 'sentence_building',
           symbolId,
           question: `Build a sentence using "${symbol.name}"`,
-          options: [`I want ${symbol.name}`, `I need ${symbol.name}`, `I like ${symbol.name}`, `Help with ${symbol.name}`],
+          options: [
+            `I want ${symbol.name}`,
+            `I need ${symbol.name}`,
+            `I like ${symbol.name}`,
+            `Help with ${symbol.name}`,
+          ],
           correctAnswer: `I want ${symbol.name}`,
           timeSpent: 0,
           hints: [`Start with "I want"`, `Add the word "${symbol.name}"`],

@@ -1,0 +1,295 @@
+name: CD Pipeline - App Store Deployment
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      platform:
+        description: 'Platform to deploy'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+          - ios
+          - android
+          - both
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # Deploy to TestFlight (iOS staging)
+  deploy-ios-testflight:
+    name: Deploy iOS to TestFlight
+    runs-on: macos-latest
+    if: github.event.inputs.platform == 'ios' || github.event.inputs.platform == 'both'
+    environment: ${{ github.event.inputs.environment == 'production' && 'production' || 'staging' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd ios && bundle install
+
+      - name: Install iOS dependencies
+        run: |
+          cd ios
+          bundle exec pod install
+
+      - name: Setup iOS certificates and provisioning profiles
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.IOS_P12_CERTIFICATE_BASE64 }}
+          p12-password: ${{ secrets.IOS_P12_CERTIFICATE_PASSWORD }}
+          keychain-password: ${{ secrets.IOS_KEYCHAIN_PASSWORD }}
+          cert-fingerprint: ${{ secrets.IOS_CERTIFICATE_FINGERPRINT }}
+
+      - name: Setup provisioning profile
+        run: |
+          echo "${{ secrets.IOS_PROVISIONING_PROFILE }}" | base64 --decode > ios/profile.mobileprovision
+
+      - name: Build iOS app for TestFlight
+        run: |
+          cd ios
+          xcodebuild \
+            -workspace Ausmo.xcworkspace \
+            -scheme Ausmo \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath Ausmo.xcarchive \
+            -allowProvisioningUpdates \
+            archive
+
+      - name: Export iOS app for TestFlight
+        run: |
+          cd ios
+          xcodebuild \
+            -exportArchive \
+            -archivePath Ausmo.xcarchive \
+            -exportPath ../build \
+            -exportOptionsPlist ExportOptions.plist
+
+      - name: Upload to TestFlight
+        run: |
+          # Install fastlane
+          gem install fastlane
+
+          cd ios
+
+          # Upload to TestFlight
+          fastlane pilot upload \
+            --ipa ../build/Ausmo.ipa \
+            --api_key_path ../fastlane/api_key.json \
+            --skip_submission true
+
+  # Deploy to Google Play (Android staging)
+  deploy-android-play-store:
+    name: Deploy Android to Play Store
+    runs-on: ubuntu-latest
+    if: github.event.inputs.platform == 'android' || github.event.inputs.platform == 'both'
+    environment: ${{ github.event.inputs.environment == 'production' && 'production' || 'staging' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Decode service account key
+        run: |
+          echo "${{ secrets.ANDROID_SERVICE_ACCOUNT_KEY }}" | base64 --decode > android/service-account.json
+
+      - name: Build Android app bundle
+        run: |
+          cd android
+          ./gradlew bundleRelease
+
+      - name: Upload to Play Store (Internal Testing)
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJson: android/service-account.json
+          packageName: com.ausmo.aac
+          releaseFile: android/app/build/outputs/bundle/release/app-release.aab
+          track: internal
+          whatsNewDirectory: android/whatsnew
+
+  # Deploy to App Store Connect (iOS production)
+  deploy-ios-app-store:
+    name: Deploy iOS to App Store
+    runs-on: macos-latest
+    if: github.event.inputs.platform == 'ios' && github.event.inputs.environment == 'production'
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd ios && bundle install
+
+      - name: Install iOS dependencies
+        run: |
+          cd ios
+          bundle exec pod install
+
+      - name: Setup iOS certificates and provisioning profiles
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.IOS_P12_CERTIFICATE_BASE64 }}
+          p12-password: ${{ secrets.IOS_P12_CERTIFICATE_PASSWORD }}
+          keychain-password: ${{ secrets.IOS_KEYCHAIN_PASSWORD }}
+          cert-fingerprint: ${{ secrets.IOS_CERTIFICATE_FINGERPRINT }}
+
+      - name: Setup provisioning profile
+        run: |
+          echo "${{ secrets.IOS_PROVISIONING_PROFILE }}" | base64 --decode > ios/profile.mobileprovision
+
+      - name: Build iOS app for App Store
+        run: |
+          cd ios
+          xcodebuild \
+            -workspace Ausmo.xcworkspace \
+            -scheme Ausmo \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath Ausmo.xcarchive \
+            -allowProvisioningUpdates \
+            archive
+
+      - name: Export iOS app for App Store
+        run: |
+          cd ios
+          xcodebuild \
+            -exportArchive \
+            -archivePath Ausmo.xcarchive \
+            -exportPath ../build \
+            -exportOptionsPlist ExportOptions-AppStore.plist
+
+      - name: Upload to App Store Connect
+        run: |
+          # Install fastlane
+          gem install fastlane
+
+          cd ios
+
+          # Upload to App Store Connect
+          fastlane deliver \
+            --ipa ../build/Ausmo.ipa \
+            --api_key_path ../fastlane/api_key.json \
+            --submit_for_review true \
+            --automatic_release true
+
+  # Deploy to Google Play (Android production)
+  deploy-android-play-store-production:
+    name: Deploy Android to Play Store (Production)
+    runs-on: ubuntu-latest
+    if: github.event.inputs.platform == 'android' && github.event.inputs.environment == 'production'
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Decode service account key
+        run: |
+          echo "${{ secrets.ANDROID_SERVICE_ACCOUNT_KEY }}" | base64 --decode > android/service-account.json
+
+      - name: Build Android app bundle
+        run: |
+          cd android
+          ./gradlew bundleRelease
+
+      - name: Upload to Play Store (Production)
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJson: android/service-account.json
+          packageName: com.ausmo.aac
+          releaseFile: android/app/build/outputs/bundle/release/app-release.aab
+          track: production
+          whatsNewDirectory: android/whatsnew
+          rolloutFraction: 1.0
+
+  # Notify stakeholders
+  notify:
+    name: Notify Stakeholders
+    runs-on: ubuntu-latest
+    needs: [deploy-ios-testflight, deploy-android-play-store, deploy-ios-app-store, deploy-android-play-store-production]
+    if: always()
+    steps:
+      - name: Send deployment notification
+        run: |
+          echo "Deployment completed for ${{ github.event.inputs.environment }} environment"
+          echo "Platform: ${{ github.event.inputs.platform }}"
+          echo "Tag/Commit: ${{ github.sha }}"
+
+          # Here you could integrate with Slack, Discord, or email notifications
+          # For now, just log the deployment info

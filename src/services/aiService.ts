@@ -70,13 +70,13 @@ class AIService {
   async initialize(userId: string): Promise<void> {
     try {
       console.log('Initializing AI service for user:', userId);
-      
+
       // Load user patterns
       await this.loadUserPatterns(userId);
-      
+
       // Initialize context history
       this.contextHistory.set(userId, []);
-      
+
       console.log('AI service initialized successfully');
     } catch (error) {
       console.error('Error initializing AI service:', error);
@@ -85,8 +85,8 @@ class AIService {
 
   // Get smart symbol suggestions based on context
   async getSmartSuggestions(
-    userId: string, 
-    currentContext: string, 
+    userId: string,
+    currentContext: string,
     recentSymbols: string[] = []
   ): Promise<SmartSuggestion[]> {
     if (!this.settings.enableSmartSuggestions) {
@@ -100,30 +100,30 @@ class AIService {
 
       // Get context-based suggestions
       const contextSuggestions = this.getContextBasedSuggestions(
-        currentContext, 
-        allSymbols, 
+        currentContext,
+        allSymbols,
         userPattern
       );
       suggestions.push(...contextSuggestions);
 
       // Get sequence-based suggestions
       const sequenceSuggestions = this.getSequenceBasedSuggestions(
-        recentSymbols, 
-        allSymbols, 
+        recentSymbols,
+        allSymbols,
         userPattern
       );
       suggestions.push(...sequenceSuggestions);
 
       // Get time-based suggestions
       const timeSuggestions = this.getTimeBasedSuggestions(
-        allSymbols, 
+        allSymbols,
         userPattern
       );
       suggestions.push(...timeSuggestions);
 
       // Get category-based suggestions
       const categorySuggestions = this.getCategoryBasedSuggestions(
-        allSymbols, 
+        allSymbols,
         userPattern
       );
       suggestions.push(...categorySuggestions);
@@ -144,8 +144,8 @@ class AIService {
 
   // Get predictive text suggestions
   async getPredictiveText(
-    userId: string, 
-    currentText: string, 
+    userId: string,
+    currentText: string,
     context: string = ''
   ): Promise<PredictiveTextSuggestion[]> {
     if (!this.settings.enablePredictiveText) {
@@ -157,15 +157,25 @@ class AIService {
       const userPattern = this.userPatterns.get(userId);
 
       // Word completion suggestions
-      const wordSuggestions = this.getWordCompletionSuggestions(currentText, userPattern);
+      const wordSuggestions = this.getWordCompletionSuggestions(
+        currentText,
+        userPattern
+      );
       suggestions.push(...wordSuggestions);
 
       // Phrase suggestions
-      const phraseSuggestions = this.getPhraseSuggestions(currentText, userPattern);
+      const phraseSuggestions = this.getPhraseSuggestions(
+        currentText,
+        userPattern
+      );
       suggestions.push(...phraseSuggestions);
 
       // Sentence suggestions
-      const sentenceSuggestions = this.getSentenceSuggestions(currentText, context, userPattern);
+      const sentenceSuggestions = this.getSentenceSuggestions(
+        currentText,
+        context,
+        userPattern
+      );
       suggestions.push(...sentenceSuggestions);
 
       // Sort by confidence and return top suggestions
@@ -180,9 +190,9 @@ class AIService {
 
   // Learn from user interaction
   async learnFromInteraction(
-    userId: string, 
-    symbolId: string, 
-    context: string, 
+    userId: string,
+    symbolId: string,
+    context: string,
     timestamp: Date
   ): Promise<void> {
     if (!this.settings.learningEnabled) {
@@ -214,15 +224,16 @@ class AIService {
     }
 
     try {
-      const analyticsData = await this.analyticsService.getAnalyticsData(userId);
-      
+      const analyticsData =
+        await this.analyticsService.getAnalyticsData(userId);
+
       if (analyticsData.length === 0) {
         return null;
       }
 
       const pattern = this.buildUsagePattern(userId, analyticsData);
       this.userPatterns.set(userId, pattern);
-      
+
       return pattern;
     } catch (error) {
       console.error('Error analyzing usage patterns:', error);
@@ -243,8 +254,8 @@ class AIService {
 
   // Private helper methods
   private getContextBasedSuggestions(
-    context: string, 
-    symbols: Symbol[], 
+    context: string,
+    symbols: Symbol[],
     userPattern?: UsagePattern
   ): SmartSuggestion[] {
     const suggestions: SmartSuggestion[] = [];
@@ -255,10 +266,10 @@ class AIService {
       let reason = '';
 
       // Check if symbol keywords match context
-      const keywordMatch = symbol.keywords.some(keyword => 
+      const keywordMatch = symbol.keywords.some(keyword =>
         contextLower.includes(keyword.toLowerCase())
       );
-      
+
       if (keywordMatch) {
         confidence = 0.8;
         reason = 'Context keyword match';
@@ -290,8 +301,8 @@ class AIService {
   }
 
   private getSequenceBasedSuggestions(
-    recentSymbols: string[], 
-    symbols: Symbol[], 
+    recentSymbols: string[],
+    symbols: Symbol[],
     userPattern?: UsagePattern
   ): SmartSuggestion[] {
     const suggestions: SmartSuggestion[] = [];
@@ -303,14 +314,14 @@ class AIService {
     // Find common sequences that start with recent symbols
     userPattern.commonSequences.forEach(sequence => {
       if (sequence.symbols.length > recentSymbols.length) {
-        const matches = recentSymbols.every((symbol, index) => 
-          sequence.symbols[index] === symbol
+        const matches = recentSymbols.every(
+          (symbol, index) => sequence.symbols[index] === symbol
         );
-        
+
         if (matches) {
           const nextSymbol = sequence.symbols[recentSymbols.length];
           const symbol = symbols.find(s => s.id === nextSymbol);
-          
+
           if (symbol) {
             suggestions.push({
               symbol,
@@ -327,7 +338,7 @@ class AIService {
   }
 
   private getTimeBasedSuggestions(
-    symbols: Symbol[], 
+    symbols: Symbol[],
     userPattern?: UsagePattern
   ): SmartSuggestion[] {
     const suggestions: SmartSuggestion[] = [];
@@ -345,23 +356,32 @@ class AIService {
 
       // Morning symbols (6-12)
       if (currentHour >= 6 && currentHour < 12) {
-        if (symbol.category === 'Food & Drink' || symbol.name.toLowerCase().includes('breakfast')) {
+        if (
+          symbol.category === 'Food & Drink' ||
+          symbol.name.toLowerCase().includes('breakfast')
+        ) {
           confidence = 0.7;
           reason = 'Morning routine';
         }
       }
-      
+
       // Afternoon symbols (12-18)
       if (currentHour >= 12 && currentHour < 18) {
-        if (symbol.category === 'Activities' || symbol.name.toLowerCase().includes('lunch')) {
+        if (
+          symbol.category === 'Activities' ||
+          symbol.name.toLowerCase().includes('lunch')
+        ) {
           confidence = 0.7;
           reason = 'Afternoon routine';
         }
       }
-      
+
       // Evening symbols (18-22)
       if (currentHour >= 18 && currentHour < 22) {
-        if (symbol.category === 'Home' || symbol.name.toLowerCase().includes('dinner')) {
+        if (
+          symbol.category === 'Home' ||
+          symbol.name.toLowerCase().includes('dinner')
+        ) {
           confidence = 0.7;
           reason = 'Evening routine';
         }
@@ -381,7 +401,7 @@ class AIService {
   }
 
   private getCategoryBasedSuggestions(
-    symbols: Symbol[], 
+    symbols: Symbol[],
     userPattern?: UsagePattern
   ): SmartSuggestion[] {
     const suggestions: SmartSuggestion[] = [];
@@ -393,7 +413,7 @@ class AIService {
     // Suggest symbols from preferred categories
     userPattern.preferredCategories.forEach(category => {
       const categorySymbols = symbols.filter(s => s.category === category);
-      
+
       categorySymbols.forEach(symbol => {
         suggestions.push({
           symbol,
@@ -408,7 +428,7 @@ class AIService {
   }
 
   private getWordCompletionSuggestions(
-    currentText: string, 
+    currentText: string,
     userPattern?: UsagePattern
   ): PredictiveTextSuggestion[] {
     const suggestions: PredictiveTextSuggestion[] = [];
@@ -416,8 +436,26 @@ class AIService {
 
     // Common word completions
     const commonWords = [
-      'hello', 'help', 'yes', 'no', 'please', 'thank', 'you', 'want', 'need', 'like',
-      'go', 'come', 'eat', 'drink', 'play', 'sleep', 'happy', 'sad', 'tired', 'hungry'
+      'hello',
+      'help',
+      'yes',
+      'no',
+      'please',
+      'thank',
+      'you',
+      'want',
+      'need',
+      'like',
+      'go',
+      'come',
+      'eat',
+      'drink',
+      'play',
+      'sleep',
+      'happy',
+      'sad',
+      'tired',
+      'hungry',
     ];
 
     commonWords.forEach(word => {
@@ -435,7 +473,7 @@ class AIService {
   }
 
   private getPhraseSuggestions(
-    currentText: string, 
+    currentText: string,
     userPattern?: UsagePattern
   ): PredictiveTextSuggestion[] {
     const suggestions: PredictiveTextSuggestion[] = [];
@@ -443,12 +481,24 @@ class AIService {
 
     // Common phrases
     const commonPhrases = [
-      'I want', 'I need', 'I like', 'I don\'t like', 'Can you help', 'Thank you',
-      'Good morning', 'Good afternoon', 'Good evening', 'How are you', 'I\'m fine'
+      'I want',
+      'I need',
+      'I like',
+      "I don't like",
+      'Can you help',
+      'Thank you',
+      'Good morning',
+      'Good afternoon',
+      'Good evening',
+      'How are you',
+      "I'm fine",
     ];
 
     commonPhrases.forEach(phrase => {
-      if (phrase.toLowerCase().startsWith(textLower) && phrase.toLowerCase() !== textLower) {
+      if (
+        phrase.toLowerCase().startsWith(textLower) &&
+        phrase.toLowerCase() !== textLower
+      ) {
         suggestions.push({
           text: phrase,
           confidence: 0.7,
@@ -462,8 +512,8 @@ class AIService {
   }
 
   private getSentenceSuggestions(
-    currentText: string, 
-    context: string, 
+    currentText: string,
+    context: string,
     userPattern?: UsagePattern
   ): PredictiveTextSuggestion[] {
     const suggestions: PredictiveTextSuggestion[] = [];
@@ -490,7 +540,9 @@ class AIService {
     return suggestions;
   }
 
-  private removeDuplicateSuggestions(suggestions: SmartSuggestion[]): SmartSuggestion[] {
+  private removeDuplicateSuggestions(
+    suggestions: SmartSuggestion[]
+  ): SmartSuggestion[] {
     const seen = new Set<string>();
     return suggestions.filter(suggestion => {
       if (seen.has(suggestion.symbol.id)) {
@@ -514,14 +566,14 @@ class AIService {
   }
 
   private async updateUserPatterns(
-    userId: string, 
-    symbolId: string, 
-    context: string, 
+    userId: string,
+    symbolId: string,
+    context: string,
     timestamp: Date
   ): Promise<void> {
     try {
       let pattern = this.userPatterns.get(userId);
-      
+
       if (!pattern) {
         pattern = {
           userId,
@@ -538,11 +590,12 @@ class AIService {
       const history = this.contextHistory.get(userId) || [];
       if (history.length > 1) {
         const sequence = [...history, symbolId];
-        const existingSequence = pattern.commonSequences.find(s => 
-          s.symbols.length === sequence.length && 
-          s.symbols.every((symbol, index) => symbol === sequence[index])
+        const existingSequence = pattern.commonSequences.find(
+          s =>
+            s.symbols.length === sequence.length &&
+            s.symbols.every((symbol, index) => symbol === sequence[index])
         );
-        
+
         if (existingSequence) {
           existingSequence.frequency++;
         } else {
@@ -562,7 +615,10 @@ class AIService {
     }
   }
 
-  private buildUsagePattern(userId: string, analyticsData: any[]): UsagePattern {
+  private buildUsagePattern(
+    userId: string,
+    analyticsData: any[]
+  ): UsagePattern {
     const pattern: UsagePattern = {
       userId,
       timeOfDay: 'unknown',
@@ -584,10 +640,16 @@ class AIService {
     pattern.dayOfWeek = this.getDayOfWeek(new Date(0, 0, mostCommonDay));
 
     // Analyze vocabulary growth
-    pattern.vocabularyGrowth = Math.max(...analyticsData.map(data => data.vocabularyGrowth));
+    pattern.vocabularyGrowth = Math.max(
+      ...analyticsData.map(data => data.vocabularyGrowth)
+    );
 
     // Analyze communication style
-    const avgEfficiency = analyticsData.reduce((sum, data) => sum + data.communicationEfficiency, 0) / analyticsData.length;
+    const avgEfficiency =
+      analyticsData.reduce(
+        (sum, data) => sum + data.communicationEfficiency,
+        0
+      ) / analyticsData.length;
     if (avgEfficiency > 1.5) {
       pattern.communicationStyle = 'complex';
     } else if (avgEfficiency > 0.8) {
@@ -608,7 +670,15 @@ class AIService {
   }
 
   private getDayOfWeek(date: Date): string {
-    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const days = [
+      'sunday',
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+    ];
     return days[date.getDay()];
   }
 
@@ -617,17 +687,17 @@ class AIService {
     arr.forEach(item => {
       counts.set(item, (counts.get(item) || 0) + 1);
     });
-    
+
     let maxCount = 0;
     let mostCommon = arr[0];
-    
+
     counts.forEach((count, item) => {
       if (count > maxCount) {
         maxCount = count;
         mostCommon = item;
       }
     });
-    
+
     return mostCommon;
   }
 }

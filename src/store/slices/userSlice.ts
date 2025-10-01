@@ -1,11 +1,19 @@
 // User Slice for Redux Store
 
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { User, UserSettings, DEFAULT_SETTINGS } from '../../types';
+import { User, UserSettings } from '../../types';
+import { getDefaultSettings } from '../../constants';
+import { setSentryUser } from '../../config/sentry';
+
+// Serialized user type for Redux storage (dates as strings)
+interface SerializedUser extends Omit<User, 'createdAt' | 'updatedAt'> {
+  createdAt: string;
+  updatedAt: string;
+}
 
 interface UserState {
-  currentUser: User | null;
-  users: User[];
+  currentUser: SerializedUser | null;
+  users: SerializedUser[];
   isLoading: boolean;
   error: string | null;
 }
@@ -18,14 +26,24 @@ const initialState: UserState = {
 };
 
 // Helper function to convert Date objects to strings for Redux serialization
-const serializeUser = (user: User): User => ({
+const serializeUser = (user: User): SerializedUser => ({
   ...user,
-  createdAt: user.createdAt instanceof Date ? user.createdAt : new Date(user.createdAt),
-  updatedAt: user.updatedAt instanceof Date ? user.updatedAt : new Date(user.updatedAt),
+  createdAt:
+    typeof user.createdAt === 'string'
+      ? user.createdAt
+      : user.createdAt instanceof Date
+        ? user.createdAt.toISOString()
+        : new Date().toISOString(),
+  updatedAt:
+    typeof user.updatedAt === 'string'
+      ? user.updatedAt
+      : user.updatedAt instanceof Date
+        ? user.updatedAt.toISOString()
+        : new Date().toISOString(),
 });
 
 // Helper function to convert string dates back to Date objects
-const deserializeUser = (user: User): User => ({
+const deserializeUser = (user: SerializedUser): User => ({
   ...user,
   createdAt: new Date(user.createdAt),
   updatedAt: new Date(user.updatedAt),
@@ -35,18 +53,45 @@ const userSlice = createSlice({
   name: 'user',
   initialState,
   reducers: {
-    setCurrentUser: (state, action: PayloadAction<User | null>) => {
-      state.currentUser = action.payload ? serializeUser(action.payload) : null;
+    setCurrentUser: (
+      state,
+      action: PayloadAction<User | SerializedUser | null>
+    ) => {
+      if (action.payload === null) {
+        state.currentUser = null;
+        setSentryUser(null);
+      } else {
+        // Check if it's already serialized (has string dates) or needs serialization
+        const isSerialized = typeof action.payload.createdAt === 'string';
+        state.currentUser = isSerialized
+          ? (action.payload as SerializedUser)
+          : serializeUser(action.payload as User);
+
+        // Update Sentry user context
+        setSentryUser(deserializeUser(state.currentUser));
+      }
     },
-    setUsers: (state, action: PayloadAction<User[]>) => {
-      state.users = action.payload.map(serializeUser);
+    setUsers: (state, action: PayloadAction<SerializedUser[]>) => {
+      state.users = action.payload;
     },
-    addUser: (state, action: PayloadAction<User>) => {
-      state.users.push(serializeUser(action.payload));
+    addUser: (state, action: PayloadAction<User | SerializedUser>) => {
+      // Check if it's already serialized (has string dates) or needs serialization
+      const isSerialized = typeof action.payload.createdAt === 'string';
+      const serializedUser = isSerialized
+        ? (action.payload as SerializedUser)
+        : serializeUser(action.payload as User);
+      state.users.push(serializedUser);
     },
-    updateUser: (state, action: PayloadAction<User>) => {
-      const serializedUser = serializeUser(action.payload);
-      const index = state.users.findIndex(user => user.id === serializedUser.id);
+    updateUser: (state, action: PayloadAction<User | SerializedUser>) => {
+      // Check if it's already serialized (has string dates) or needs serialization
+      const isSerialized = typeof action.payload.createdAt === 'string';
+      const serializedUser = isSerialized
+        ? (action.payload as SerializedUser)
+        : serializeUser(action.payload as User);
+
+      const index = state.users.findIndex(
+        user => user.id === serializedUser.id
+      );
       if (index !== -1) {
         state.users[index] = serializedUser;
       }
@@ -60,14 +105,35 @@ const userSlice = createSlice({
         state.currentUser = null;
       }
     },
-    updateUserSettings: (state, action: PayloadAction<Partial<UserSettings>>) => {
+    updateUserSettings: (
+      state,
+      action: PayloadAction<Partial<UserSettings>>
+    ) => {
       if (state.currentUser) {
+        // Use system theme as default for Redux updates
+        const defaultSettings = getDefaultSettings('system');
         state.currentUser.settings = {
-          voiceSettings: state.currentUser.settings?.voiceSettings || DEFAULT_SETTINGS.voiceSettings,
-          visualSettings: state.currentUser.settings?.visualSettings || DEFAULT_SETTINGS.visualSettings,
-          accessibilitySettings: state.currentUser.settings?.accessibilitySettings || DEFAULT_SETTINGS.accessibilitySettings,
-          scanningSettings: state.currentUser.settings?.scanningSettings || DEFAULT_SETTINGS.scanningSettings,
-          audioSettings: state.currentUser.settings?.audioSettings || DEFAULT_SETTINGS.audioSettings,
+          voiceSettings:
+            state.currentUser.settings?.voiceSettings ||
+            defaultSettings.voiceSettings,
+          visualSettings:
+            state.currentUser.settings?.visualSettings ||
+            defaultSettings.visualSettings,
+          accessibilitySettings:
+            state.currentUser.settings?.accessibilitySettings ||
+            defaultSettings.accessibilitySettings,
+          scanningSettings:
+            state.currentUser.settings?.scanningSettings ||
+            defaultSettings.scanningSettings,
+          audioSettings:
+            state.currentUser.settings?.audioSettings ||
+            defaultSettings.audioSettings,
+          expressSettings:
+            state.currentUser.settings?.expressSettings ||
+            defaultSettings.expressSettings,
+          advancedSettings:
+            state.currentUser.settings?.advancedSettings ||
+            defaultSettings.advancedSettings,
           ...action.payload,
         };
       }
@@ -78,7 +144,7 @@ const userSlice = createSlice({
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
     },
-    clearError: (state) => {
+    clearError: state => {
       state.error = null;
     },
     resetUserState: () => initialState,
@@ -97,5 +163,17 @@ export const {
   clearError,
   resetUserState,
 } = userSlice.actions;
+
+export { serializeUser };
+export type { SerializedUser };
+
+// Helper function to convert SerializedUser back to User for services that need it
+export const deserializeUserForService = (
+  serializedUser: SerializedUser
+): User => ({
+  ...serializedUser,
+  createdAt: new Date(serializedUser.createdAt),
+  updatedAt: new Date(serializedUser.updatedAt),
+});
 
 export default userSlice.reducer;

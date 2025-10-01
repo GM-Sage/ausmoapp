@@ -1,465 +1,724 @@
-// Backup Settings Screen
+// Backup Settings Screen - Configure backup and recovery settings
 
 import React, { useState, useEffect } from 'react';
+import { getThemeColors } from '../../utils/themeUtils';
+import { useVisualSettings } from '../../contexts/VisualSettingsContext';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
   Switch,
-  ActivityIndicator,
-  ProgressBarAndroid,
-  Platform,
+  Alert,
+  FlatList,
+  RefreshControl,
 } from 'react-native';
-import { useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 
-import { RootState } from '../../store';
-import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../../constants';
-import BackupService, { BackupOptions, ExportOptions, CloudBackupOptions } from '../../services/backupService';
+import { TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../../constants';
+import BackupRecoveryService, {
+  BackupConfiguration,
+  BackupMetadata,
+} from '../../services/backupRecoveryService';
+import { ScreenSafeArea } from '../../components/common/SafeAreaWrapper';
 
-export default function BackupSettingsScreen() {
-  const currentUser = useSelector((state: RootState) => state.user.currentUser);
-  const [backupService] = useState(() => BackupService.getInstance());
+export default function BackupSettingsScreen({
+  navigation,
+}: {
+  navigation?: any;
+}) {
+  const { theme } = useVisualSettings();
+  const safeTheme = theme || 'light'; // Ensure theme is never undefined
+  const themeColors = getThemeColors(safeTheme);
+  const [backupService] = useState(() => BackupRecoveryService.getInstance());
+  const [backupConfig, setBackupConfig] = useState<BackupConfiguration | null>(
+    null
+  );
+  const [backupHistory, setBackupHistory] = useState<BackupMetadata[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [backupOptions, setBackupOptions] = useState<BackupOptions>({
-    includeUsers: true,
-    includeBooks: true,
-    includeMessages: true,
-    includeSymbols: true,
-    includeAnalytics: true,
-    includeSettings: true,
-    compressData: true,
-    encryptData: false,
-  });
-  const [cloudOptions, setCloudOptions] = useState<CloudBackupOptions>({
-    provider: 'iCloud',
-    autoBackup: false,
-    backupFrequency: 'weekly',
-    encryptData: false,
-  });
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const handleCreateBackup = async () => {
+  useEffect(() => {
+    loadBackupData();
+  }, []);
+
+  const loadBackupData = async () => {
     try {
       setIsLoading(true);
-      setProgress(0);
+      const config = backupService.getBackupConfiguration();
+      const history = backupService.getBackupHistory(10);
 
-      // Simulate progress
-      const progressInterval = setInterval(() => {
-        setProgress(prev => Math.min(prev + 0.1, 0.9));
-      }, 200);
-
-      const result = await backupService.createBackup(backupOptions);
-
-      clearInterval(progressInterval);
-      setProgress(1);
-
-      if (result.success) {
-        Alert.alert(
-          'Backup Created',
-          `Backup created successfully!\nFile size: ${(result.fileSize! / 1024).toFixed(1)} KB`,
-          [
-            { text: 'OK', style: 'default' },
-            { 
-              text: 'Share', 
-              onPress: () => shareBackup(result.filePath!)
-            },
-          ]
-        );
-      } else {
-        Alert.alert('Backup Failed', result.error || 'Unknown error occurred');
-      }
+      setBackupConfig(config);
+      setBackupHistory(history);
     } catch (error) {
-      console.error('Error creating backup:', error);
-      Alert.alert('Error', 'Failed to create backup');
+      console.error('Error loading backup data:', error);
+      Alert.alert('Error', 'Failed to load backup settings');
     } finally {
       setIsLoading(false);
-      setProgress(0);
     }
   };
 
-  const handleRestoreBackup = async () => {
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await loadBackupData();
+    setIsRefreshing(false);
+  };
+
+  const updateBackupConfig = async (updates: Partial<BackupConfiguration>) => {
+    if (!backupConfig) return;
+
+    try {
+      await backupService.updateBackupConfiguration(updates);
+      setBackupConfig({ ...backupConfig, ...updates });
+    } catch (error) {
+      console.error('Error updating backup config:', error);
+      Alert.alert('Error', 'Failed to update backup settings');
+    }
+  };
+
+  const createManualBackup = async () => {
+    try {
+      setIsLoading(true);
+      await backupService.createManualBackup();
+      await loadBackupData();
+      Alert.alert('Success', 'Manual backup created successfully');
+    } catch (error) {
+      console.error('Error creating manual backup:', error);
+      Alert.alert('Error', 'Failed to create manual backup');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const restoreFromBackup = async (backupId: string) => {
     Alert.alert(
       'Restore Backup',
-      'This will replace all current data with the backup data. Are you sure?',
+      'Are you sure you want to restore from this backup? This will overwrite current data.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Restore', 
+        {
+          text: 'Restore',
           style: 'destructive',
           onPress: async () => {
             try {
               setIsLoading(true);
-              const result = await backupService.importData();
-              
-              if (result.success) {
-                Alert.alert(
-                  'Restore Successful',
-                  `Restored:\n• ${result.restoredItems.users} users\n• ${result.restoredItems.books} books\n• ${result.restoredItems.pages} pages\n• ${result.restoredItems.messages} messages\n• ${result.restoredItems.symbols} symbols\n• ${result.restoredItems.analytics} analytics`
-                );
-              } else {
-                Alert.alert('Restore Failed', result.error || 'Unknown error occurred');
-              }
+              await backupService.restoreFromBackup(backupId);
+              Alert.alert('Success', 'Backup restored successfully');
+              await loadBackupData();
             } catch (error) {
               console.error('Error restoring backup:', error);
               Alert.alert('Error', 'Failed to restore backup');
             } finally {
               setIsLoading(false);
             }
-          }
+          },
         },
       ]
     );
   };
 
-  const shareBackup = async (filePath: string) => {
-    try {
-      const success = await backupService.shareBackup(filePath);
-      if (!success) {
-        Alert.alert('Error', 'Failed to share backup');
-      }
-    } catch (error) {
-      console.error('Error sharing backup:', error);
-      Alert.alert('Error', 'Failed to share backup');
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+  };
+
+  const formatDate = (date: Date): string => {
+    return (
+      date.toLocaleDateString() +
+      ' ' +
+      date.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    );
+  };
+
+  const getStatusColor = (status: BackupMetadata['status']): string => {
+    switch (status) {
+      case 'completed':
+        return themeColors.success;
+      case 'failed':
+        return themeColors.error;
+      case 'in_progress':
+        return themeColors.warning;
+      case 'cancelled':
+        return themeColors.textSecondary;
+      default:
+        return themeColors.textSecondary;
     }
   };
 
-  const handleExportData = async (format: 'json' | 'csv' | 'xml') => {
-    try {
-      setIsLoading(true);
-      
-      const exportOptions: ExportOptions = {
-        format,
-        includeImages: true,
-        includeAudio: true,
-        includeMetadata: true,
-      };
-
-      const result = await backupService.exportData(exportOptions);
-      
-      if (result.success) {
-        Alert.alert(
-          'Export Successful',
-          `Data exported to ${format.toUpperCase()} format!\nFile size: ${(result.fileSize! / 1024).toFixed(1)} KB`,
-          [
-            { text: 'OK', style: 'default' },
-            { 
-              text: 'Share', 
-              onPress: () => shareBackup(result.filePath!)
-            },
-          ]
-        );
-      } else {
-        Alert.alert('Export Failed', result.error || 'Unknown error occurred');
-      }
-    } catch (error) {
-      console.error('Error exporting data:', error);
-      Alert.alert('Error', 'Failed to export data');
-    } finally {
-      setIsLoading(false);
+  const getStatusIcon = (status: BackupMetadata['status']): string => {
+    switch (status) {
+      case 'completed':
+        return 'checkmark-circle';
+      case 'failed':
+        return 'close-circle';
+      case 'in_progress':
+        return 'time';
+      case 'cancelled':
+        return 'close';
+      default:
+        return 'help-circle';
     }
   };
 
-  const handleCloudBackup = async () => {
-    try {
-      setIsLoading(true);
-      const result = await backupService.backupToCloud(cloudOptions);
-      
-      if (result.success) {
-        Alert.alert('Cloud Backup Successful', 'Your data has been backed up to the cloud');
-      } else {
-        Alert.alert('Cloud Backup Failed', result.error || 'Unknown error occurred');
-      }
-    } catch (error) {
-      console.error('Error with cloud backup:', error);
-      Alert.alert('Error', 'Failed to backup to cloud');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const renderBackupOptions = () => {
-    return (
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Backup Options</Text>
-        
-        {Object.entries(backupOptions).map(([key, value]) => (
-          <View key={key} style={styles.optionRow}>
-            <Text style={styles.optionLabel}>
-              {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-            </Text>
-            <Switch
-              value={value}
-              onValueChange={(newValue) => 
-                setBackupOptions(prev => ({ ...prev, [key]: newValue }))
-              }
-              trackColor={{ false: COLORS.DIVIDER, true: COLORS.PRIMARY }}
-              thumbColor={value ? COLORS.SURFACE : COLORS.TEXT_DISABLED}
-            />
-          </View>
-        ))}
-      </View>
-    );
-  };
-
-  const renderCloudOptions = () => {
-    return (
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Cloud Backup</Text>
-        
-        <View style={styles.optionRow}>
-          <Text style={styles.optionLabel}>Auto Backup</Text>
-          <Switch
-            value={cloudOptions.autoBackup}
-            onValueChange={(value) => 
-              setCloudOptions(prev => ({ ...prev, autoBackup: value }))
-            }
-            trackColor={{ false: COLORS.DIVIDER, true: COLORS.PRIMARY }}
-            thumbColor={cloudOptions.autoBackup ? COLORS.SURFACE : COLORS.TEXT_DISABLED}
-          />
+  const renderBackupItem = ({ item }: { item: BackupMetadata }) => (
+    <TouchableOpacity
+      style={styles.backupItem}
+      onPress={() => restoreFromBackup(item.id)}
+      accessible={true}
+      accessibilityLabel={`Backup from ${formatDate(item.timestamp)}, ${formatFileSize(item.size)}`}
+    >
+      <View style={styles.backupHeader}>
+        <View style={styles.backupInfo}>
+          <Text style={styles.backupDate}>{formatDate(item.timestamp)}</Text>
+          <Text style={styles.backupSize}>{formatFileSize(item.size)}</Text>
         </View>
-
-        <View style={styles.optionRow}>
-          <Text style={styles.optionLabel}>Encrypt Data</Text>
-          <Switch
-            value={cloudOptions.encryptData}
-            onValueChange={(value) => 
-              setCloudOptions(prev => ({ ...prev, encryptData: value }))
-            }
-            trackColor={{ false: COLORS.DIVIDER, true: COLORS.PRIMARY }}
-            thumbColor={cloudOptions.encryptData ? COLORS.SURFACE : COLORS.TEXT_DISABLED}
+        <View style={styles.backupStatus}>
+          <Ionicons
+            name={getStatusIcon(item.status) as any}
+            size={20}
+            color={getStatusColor(item.status)}
           />
+          <Text
+            style={[
+              styles.backupStatusText,
+              { color: getStatusColor(item.status) },
+            ]}
+          >
+            {item.status}
+          </Text>
         </View>
       </View>
-    );
-  };
+      <Text style={styles.backupType}>
+        {item.type} backup • {item.platform}
+      </Text>
+      {item.error && <Text style={styles.backupError}>{item.error}</Text>}
+    </TouchableOpacity>
+  );
 
-  const renderActionButtons = () => {
+  if (!backupConfig) {
     return (
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Actions</Text>
-        
-        <TouchableOpacity
-          style={[styles.actionButton, styles.primaryButton]}
-          onPress={handleCreateBackup}
-          disabled={isLoading}
-        >
-          <Ionicons name="cloud-upload" size={24} color={COLORS.SURFACE} />
-          <Text style={styles.actionButtonText}>Create Backup</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionButton, styles.secondaryButton]}
-          onPress={handleRestoreBackup}
-          disabled={isLoading}
-        >
-          <Ionicons name="cloud-download" size={24} color={COLORS.PRIMARY} />
-          <Text style={[styles.actionButtonText, { color: COLORS.PRIMARY }]}>Restore Backup</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionButton, styles.tertiaryButton]}
-          onPress={handleCloudBackup}
-          disabled={isLoading}
-        >
-          <Ionicons name="cloud" size={24} color={COLORS.SECONDARY} />
-          <Text style={[styles.actionButtonText, { color: COLORS.SECONDARY }]}>Cloud Backup</Text>
-        </TouchableOpacity>
-      </View>
+      <ScreenSafeArea style={styles.container}>
+        <Text>Loading backup settings...</Text>
+      </ScreenSafeArea>
     );
-  };
-
-  const renderExportButtons = () => {
-    return (
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Export Data</Text>
-        
-        <View style={styles.exportButtons}>
-          <TouchableOpacity
-            style={[styles.exportButton, styles.jsonButton]}
-            onPress={() => handleExportData('json')}
-            disabled={isLoading}
-          >
-            <Text style={styles.exportButtonText}>JSON</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.exportButton, styles.csvButton]}
-            onPress={() => handleExportData('csv')}
-            disabled={isLoading}
-          >
-            <Text style={styles.exportButtonText}>CSV</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.exportButton, styles.xmlButton]}
-            onPress={() => handleExportData('xml')}
-            disabled={isLoading}
-          >
-            <Text style={styles.exportButtonText}>XML</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  };
-
-  const renderProgress = () => {
-    if (!isLoading) return null;
-
-    return (
-      <View style={styles.progressContainer}>
-        <Text style={styles.progressText}>Processing...</Text>
-        {Platform.OS === 'android' ? (
-          <ProgressBarAndroid
-            styleAttr="Horizontal"
-            indeterminate={false}
-            progress={progress}
-            color={COLORS.PRIMARY}
-          />
-        ) : (
-          <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
-          </View>
-        )}
-      </View>
-    );
-  };
+  }
 
   return (
-    <View style={styles.container}>
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+    <ScreenSafeArea style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.title}>Backup & Recovery</Text>
+        <TouchableOpacity
+          style={styles.createBackupButton}
+          onPress={createManualBackup}
+          disabled={isLoading}
+          accessible={true}
+          accessibilityLabel="Create manual backup"
+        >
+          <Ionicons name="add" size={20} color={themeColors.surface} />
+          <Text style={styles.createBackupText}>Create Backup</Text>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView
+        style={styles.content}
+        refreshControl={
+          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+        }
       >
-        {renderBackupOptions()}
-        {renderCloudOptions()}
-        {renderActionButtons()}
-        {renderExportButtons()}
-        {renderProgress()}
+        {/* Backup Settings */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Backup Settings</Text>
+
+          <View style={styles.settingItem}>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingTitle}>Enable Automatic Backups</Text>
+              <Text style={styles.settingDescription}>
+                Automatically create backups on a schedule
+              </Text>
+            </View>
+            <Switch
+              value={backupConfig.enabled}
+              onValueChange={value => updateBackupConfig({ enabled: value })}
+              trackColor={{
+                false: themeColors.border,
+                true: themeColors.primary,
+              }}
+              thumbColor={
+                backupConfig.enabled
+                  ? themeColors.surface
+                  : themeColors.textSecondary
+              }
+            />
+          </View>
+
+          <View style={styles.settingItem}>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingTitle}>Backup Frequency</Text>
+              <Text style={styles.settingDescription}>
+                How often to create automatic backups
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.frequencySelector}
+              onPress={() => {
+                Alert.alert(
+                  'Backup Frequency',
+                  'Choose how often to create automatic backups',
+                  [
+                    {
+                      text: 'Daily',
+                      onPress: () => updateBackupConfig({ frequency: 'daily' }),
+                    },
+                    {
+                      text: 'Weekly',
+                      onPress: () =>
+                        updateBackupConfig({ frequency: 'weekly' }),
+                    },
+                    {
+                      text: 'Monthly',
+                      onPress: () =>
+                        updateBackupConfig({ frequency: 'monthly' }),
+                    },
+                    { text: 'Cancel', style: 'cancel' },
+                  ]
+                );
+              }}
+            >
+              <Text style={styles.frequencyText}>
+                {backupConfig.frequency.charAt(0).toUpperCase() +
+                  backupConfig.frequency.slice(1)}
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={themeColors.textSecondary}
+              />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.settingItem}>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingTitle}>Backup Time</Text>
+              <Text style={styles.settingDescription}>
+                When to create daily backups
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.timeSelector}
+              onPress={() => {
+                // In a real app, you'd show a time picker
+                Alert.alert('Backup Time', 'Time picker would be shown here');
+              }}
+            >
+              <Text style={styles.timeText}>{backupConfig.time}</Text>
+              <Ionicons name="time" size={16} color={themeColors.primary} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Data Selection */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Data to Backup</Text>
+
+          {[
+            {
+              key: 'includeUserData',
+              title: 'User Profiles',
+              description: 'Account and profile information',
+            },
+            {
+              key: 'includeCommunicationData',
+              title: 'Communication Data',
+              description: 'Messages and symbol libraries',
+            },
+            {
+              key: 'includeProgressData',
+              title: 'Progress Data',
+              description: 'Learning achievements and analytics',
+            },
+            {
+              key: 'includeSettings',
+              title: 'App Settings',
+              description: 'Preferences and configurations',
+            },
+          ].map(setting => (
+            <View key={setting.key} style={styles.settingItem}>
+              <View style={styles.settingInfo}>
+                <Text style={styles.settingTitle}>{setting.title}</Text>
+                <Text style={styles.settingDescription}>
+                  {setting.description}
+                </Text>
+              </View>
+              <Switch
+                value={
+                  backupConfig[
+                    setting.key as keyof BackupConfiguration
+                  ] as boolean
+                }
+                onValueChange={value =>
+                  updateBackupConfig({ [setting.key]: value })
+                }
+                trackColor={{
+                  false: themeColors.border,
+                  true: themeColors.primary,
+                }}
+                thumbColor={
+                  (backupConfig[
+                    setting.key as keyof BackupConfiguration
+                  ] as boolean)
+                    ? themeColors.surface
+                    : themeColors.textSecondary
+                }
+              />
+            </View>
+          ))}
+        </View>
+
+        {/* Backup Locations */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Backup Locations</Text>
+
+          <View style={styles.settingItem}>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingTitle}>Local Storage</Text>
+              <Text style={styles.settingDescription}>
+                Store backups on device storage
+              </Text>
+            </View>
+            <Switch
+              value={backupConfig.localBackup}
+              onValueChange={value =>
+                updateBackupConfig({ localBackup: value })
+              }
+              trackColor={{
+                false: themeColors.border,
+                true: themeColors.primary,
+              }}
+              thumbColor={
+                backupConfig.localBackup
+                  ? themeColors.surface
+                  : themeColors.textSecondary
+              }
+            />
+          </View>
+
+          <View style={styles.settingItem}>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingTitle}>Cloud Storage</Text>
+              <Text style={styles.settingDescription}>
+                Upload backups to secure cloud storage
+              </Text>
+            </View>
+            <Switch
+              value={backupConfig.cloudBackup}
+              onValueChange={value =>
+                updateBackupConfig({ cloudBackup: value })
+              }
+              trackColor={{
+                false: themeColors.border,
+                true: themeColors.primary,
+              }}
+              thumbColor={
+                backupConfig.cloudBackup
+                  ? themeColors.surface
+                  : themeColors.textSecondary
+              }
+            />
+          </View>
+
+          <View style={styles.settingItem}>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingTitle}>Encryption</Text>
+              <Text style={styles.settingDescription}>
+                Encrypt backup data for security
+              </Text>
+            </View>
+            <Switch
+              value={backupConfig.encryptionEnabled}
+              onValueChange={value =>
+                updateBackupConfig({ encryptionEnabled: value })
+              }
+              trackColor={{
+                false: themeColors.border,
+                true: themeColors.primary,
+              }}
+              thumbColor={
+                backupConfig.encryptionEnabled
+                  ? themeColors.surface
+                  : themeColors.textSecondary
+              }
+            />
+          </View>
+        </View>
+
+        {/* Backup History */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Backup History</Text>
+
+          {backupHistory.length > 0 ? (
+            <FlatList
+              data={backupHistory}
+              renderItem={renderBackupItem}
+              keyExtractor={item => item.id}
+              scrollEnabled={false}
+              ItemSeparatorComponent={() => <View style={styles.separator} />}
+            />
+          ) : (
+            <View style={styles.emptyState}>
+              <Ionicons
+                name="archive-outline"
+                size={48}
+                color={themeColors.textSecondary}
+              />
+              <Text style={styles.emptyStateText}>No backups available</Text>
+              <Text style={styles.emptyStateSubtext}>
+                Create your first backup to get started
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Advanced Settings */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Advanced Settings</Text>
+
+          <View style={styles.settingItem}>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingTitle}>Retention Period</Text>
+              <Text style={styles.settingDescription}>
+                How long to keep old backups (days)
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.retentionSelector}
+              onPress={() => {
+                Alert.alert(
+                  'Retention Period',
+                  'Choose how long to keep backup files',
+                  [
+                    {
+                      text: '30 Days',
+                      onPress: () => updateBackupConfig({ retentionDays: 30 }),
+                    },
+                    {
+                      text: '90 Days',
+                      onPress: () => updateBackupConfig({ retentionDays: 90 }),
+                    },
+                    {
+                      text: '1 Year',
+                      onPress: () => updateBackupConfig({ retentionDays: 365 }),
+                    },
+                    { text: 'Cancel', style: 'cancel' },
+                  ]
+                );
+              }}
+            >
+              <Text style={styles.retentionText}>
+                {backupConfig.retentionDays} days
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={themeColors.textSecondary}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
       </ScrollView>
-    </View>
+    </ScreenSafeArea>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: themeColors.background,
   },
-  scrollView: {
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.LG,
+    paddingVertical: SPACING.MD,
+    backgroundColor: themeColors.primary,
+  },
+  title: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
+    color: themeColors.surface,
+  },
+  createBackupButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: themeColors.secondary,
+    paddingHorizontal: SPACING.MD,
+    paddingVertical: SPACING.SM,
+    borderRadius: BORDER_RADIUS.SM,
+    gap: SPACING.XS,
+  },
+  createBackupText: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
+    color: themeColors.surface,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
+  },
+  content: {
     flex: 1,
   },
-  scrollContent: {
-    padding: SPACING.MD,
-  },
   section: {
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
+    marginHorizontal: SPACING.LG,
+    marginVertical: SPACING.SM,
     borderRadius: BORDER_RADIUS.MD,
-    padding: SPACING.MD,
-    marginBottom: SPACING.MD,
-    shadowColor: COLORS.TEXT_PRIMARY,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    overflow: 'hidden',
   },
   sectionTitle: {
     fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
-    marginBottom: SPACING.MD,
+    color: themeColors.text_PRIMARY,
+    paddingHorizontal: SPACING.LG,
+    paddingVertical: SPACING.MD,
+    backgroundColor: themeColors.background,
   },
-  optionRow: {
+  settingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.LG,
+    paddingVertical: SPACING.MD,
+    borderBottomWidth: 1,
+    borderBottomColor: themeColors.border,
+  },
+  settingInfo: {
+    flex: 1,
+    marginRight: SPACING.MD,
+  },
+  settingTitle: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
+    color: themeColors.text_PRIMARY,
+    marginBottom: SPACING.XS,
+  },
+  settingDescription: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
+    color: themeColors.textSecondary,
+    lineHeight: 18,
+  },
+  frequencySelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.MD,
+    paddingVertical: SPACING.SM,
+    backgroundColor: themeColors.background,
+    borderRadius: BORDER_RADIUS.SM,
+    borderWidth: 1,
+    borderColor: themeColors.border,
+  },
+  frequencyText: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
+    color: themeColors.text_PRIMARY,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
+    marginRight: SPACING.SM,
+  },
+  timeSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.MD,
+    paddingVertical: SPACING.SM,
+    backgroundColor: themeColors.background,
+    borderRadius: BORDER_RADIUS.SM,
+    borderWidth: 1,
+    borderColor: themeColors.border,
+  },
+  timeText: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
+    color: themeColors.text_PRIMARY,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
+    marginRight: SPACING.SM,
+  },
+  retentionSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.MD,
+    paddingVertical: SPACING.SM,
+    backgroundColor: themeColors.background,
+    borderRadius: BORDER_RADIUS.SM,
+    borderWidth: 1,
+    borderColor: themeColors.border,
+  },
+  retentionText: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
+    color: themeColors.text_PRIMARY,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
+    marginRight: SPACING.SM,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: themeColors.border,
+    marginHorizontal: SPACING.LG,
+  },
+  backupItem: {
+    paddingHorizontal: SPACING.LG,
+    paddingVertical: SPACING.MD,
+  },
+  backupHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: SPACING.SM,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.DIVIDER,
+    alignItems: 'flex-start',
+    marginBottom: SPACING.XS,
   },
-  optionLabel: {
-    fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
+  backupInfo: {
     flex: 1,
   },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: SPACING.MD,
-    paddingHorizontal: SPACING.LG,
-    borderRadius: BORDER_RADIUS.MD,
-    marginBottom: SPACING.SM,
-    gap: SPACING.SM,
-  },
-  primaryButton: {
-    backgroundColor: COLORS.PRIMARY,
-  },
-  secondaryButton: {
-    backgroundColor: COLORS.SURFACE,
-    borderWidth: 2,
-    borderColor: COLORS.PRIMARY,
-  },
-  tertiaryButton: {
-    backgroundColor: COLORS.SURFACE,
-    borderWidth: 2,
-    borderColor: COLORS.SECONDARY,
-  },
-  actionButtonText: {
+  backupDate: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.SURFACE,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
+    color: themeColors.text_PRIMARY,
   },
-  exportButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    gap: SPACING.SM,
-  },
-  exportButton: {
-    flex: 1,
-    paddingVertical: SPACING.MD,
-    paddingHorizontal: SPACING.SM,
-    borderRadius: BORDER_RADIUS.SM,
-    alignItems: 'center',
-  },
-  jsonButton: {
-    backgroundColor: COLORS.PRIMARY,
-  },
-  csvButton: {
-    backgroundColor: COLORS.SECONDARY,
-  },
-  xmlButton: {
-    backgroundColor: COLORS.WARNING,
-  },
-  exportButtonText: {
+  backupSize: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.SURFACE,
+    color: themeColors.textSecondary,
+    marginTop: SPACING.XS,
   },
-  progressContainer: {
-    backgroundColor: COLORS.SURFACE,
-    borderRadius: BORDER_RADIUS.MD,
-    padding: SPACING.MD,
+  backupStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.XS,
+  },
+  backupStatusText: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
+  },
+  backupType: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
+    color: themeColors.textSecondary,
+    marginBottom: SPACING.XS,
+  },
+  backupError: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
+    color: themeColors.error,
+    fontStyle: 'italic',
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: SPACING.XL,
+  },
+  emptyStateText: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
+    color: themeColors.textSecondary,
     marginTop: SPACING.MD,
-  },
-  progressText: {
-    fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
-    textAlign: 'center',
     marginBottom: SPACING.SM,
   },
-  progressBar: {
-    height: 4,
-    backgroundColor: COLORS.DIVIDER,
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: COLORS.PRIMARY,
+  emptyStateSubtext: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
+    color: themeColors.textSecondary,
+    textAlign: 'center',
   },
 });

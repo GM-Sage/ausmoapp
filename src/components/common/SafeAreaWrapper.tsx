@@ -3,8 +3,12 @@
 
 import React from 'react';
 import { View, StyleSheet, StatusBar, Platform } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS } from '../../constants';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
+import { useVisualSettings } from '../../contexts/VisualSettingsContext';
+import { getThemeColors } from '../../utils/themeUtils';
 
 interface SafeAreaWrapperProps {
   children: React.ReactNode;
@@ -24,25 +28,32 @@ interface SafeAreaWrapperProps {
 export const SafeAreaWrapper: React.FC<SafeAreaWrapperProps> = ({
   children,
   style,
-  backgroundColor = COLORS.BACKGROUND,
+  backgroundColor,
   statusBarStyle = 'dark-content',
-  statusBarBackgroundColor = backgroundColor,
+  statusBarBackgroundColor,
   edges = ['top', 'bottom', 'left', 'right'],
   forceInset,
 }) => {
+  const { theme } = useVisualSettings();
+  const safeTheme = theme || 'light'; // Ensure theme is never undefined
+  const themeColors = getThemeColors(safeTheme);
+
+  const effectiveBackgroundColor = backgroundColor || themeColors.background;
+  const effectiveStatusBarBackgroundColor =
+    statusBarBackgroundColor || effectiveBackgroundColor;
   const insets = useSafeAreaInsets();
 
   return (
     <>
       <StatusBar
         barStyle={statusBarStyle}
-        backgroundColor={statusBarBackgroundColor}
+        backgroundColor={effectiveStatusBarBackgroundColor}
         translucent={Platform.OS === 'android'}
       />
       <SafeAreaView
         style={[
           styles.container,
-          { backgroundColor },
+          { backgroundColor: effectiveBackgroundColor },
           style,
         ]}
         edges={edges}
@@ -55,45 +66,35 @@ export const SafeAreaWrapper: React.FC<SafeAreaWrapperProps> = ({
 };
 
 // Screen-specific safe area components
-export const ScreenSafeArea: React.FC<Omit<SafeAreaWrapperProps, 'edges'>> = (props) => (
-  <SafeAreaWrapper
-    {...props}
-    edges={['top', 'bottom', 'left', 'right']}
-  />
+export const ScreenSafeArea: React.FC<
+  Omit<SafeAreaWrapperProps, 'edges'>
+> = props => (
+  <SafeAreaWrapper {...props} edges={['top', 'bottom', 'left', 'right']} />
 );
 
-export const TopSafeArea: React.FC<Omit<SafeAreaWrapperProps, 'edges'>> = (props) => (
-  <SafeAreaWrapper
-    {...props}
-    edges={['top']}
-  />
-);
+export const TopSafeArea: React.FC<
+  Omit<SafeAreaWrapperProps, 'edges'>
+> = props => <SafeAreaWrapper {...props} edges={['top']} />;
 
-export const BottomSafeArea: React.FC<Omit<SafeAreaWrapperProps, 'edges'>> = (props) => (
-  <SafeAreaWrapper
-    {...props}
-    edges={['bottom']}
-  />
-);
+export const BottomSafeArea: React.FC<
+  Omit<SafeAreaWrapperProps, 'edges'>
+> = props => <SafeAreaWrapper {...props} edges={['bottom']} />;
 
-export const HorizontalSafeArea: React.FC<Omit<SafeAreaWrapperProps, 'edges'>> = (props) => (
-  <SafeAreaWrapper
-    {...props}
-    edges={['left', 'right']}
-  />
-);
+export const HorizontalSafeArea: React.FC<
+  Omit<SafeAreaWrapperProps, 'edges'>
+> = props => <SafeAreaWrapper {...props} edges={['left', 'right']} />;
 
 // Header safe area for navigation headers
-export const HeaderSafeArea: React.FC<Omit<SafeAreaWrapperProps, 'edges'>> = (props) => (
-  <SafeAreaWrapper
-    {...props}
-    edges={['top']}
-    forceInset={{ top: 'always' }}
-  />
+export const HeaderSafeArea: React.FC<
+  Omit<SafeAreaWrapperProps, 'edges'>
+> = props => (
+  <SafeAreaWrapper {...props} edges={['top']} forceInset={{ top: 'always' }} />
 );
 
 // Footer safe area for bottom navigation
-export const FooterSafeArea: React.FC<Omit<SafeAreaWrapperProps, 'edges'>> = (props) => (
+export const FooterSafeArea: React.FC<
+  Omit<SafeAreaWrapperProps, 'edges'>
+> = props => (
   <SafeAreaWrapper
     {...props}
     edges={['bottom']}
@@ -102,7 +103,9 @@ export const FooterSafeArea: React.FC<Omit<SafeAreaWrapperProps, 'edges'>> = (pr
 );
 
 // Communication screen safe area (handles all edges)
-export const CommunicationSafeArea: React.FC<Omit<SafeAreaWrapperProps, 'edges'>> = (props) => (
+export const CommunicationSafeArea: React.FC<
+  Omit<SafeAreaWrapperProps, 'edges'>
+> = props => (
   <SafeAreaWrapper
     {...props}
     edges={['top', 'bottom', 'left', 'right']}
@@ -116,7 +119,9 @@ export const CommunicationSafeArea: React.FC<Omit<SafeAreaWrapperProps, 'edges'>
 );
 
 // Settings screen safe area (handles top and sides)
-export const SettingsSafeArea: React.FC<Omit<SafeAreaWrapperProps, 'edges'>> = (props) => (
+export const SettingsSafeArea: React.FC<
+  Omit<SafeAreaWrapperProps, 'edges'>
+> = props => (
   <SafeAreaWrapper
     {...props}
     edges={['top', 'left', 'right']}
@@ -129,7 +134,9 @@ export const SettingsSafeArea: React.FC<Omit<SafeAreaWrapperProps, 'edges'>> = (
 );
 
 // Modal safe area (handles all edges with extra padding)
-export const ModalSafeArea: React.FC<Omit<SafeAreaWrapperProps, 'edges'>> = (props) => (
+export const ModalSafeArea: React.FC<
+  Omit<SafeAreaWrapperProps, 'edges'>
+> = props => (
   <SafeAreaWrapper
     {...props}
     edges={['top', 'bottom', 'left', 'right']}
@@ -144,7 +151,9 @@ export const ModalSafeArea: React.FC<Omit<SafeAreaWrapperProps, 'edges'>> = (pro
 );
 
 // Keyboard safe area (handles keyboard avoidance)
-export const KeyboardSafeArea: React.FC<Omit<SafeAreaWrapperProps, 'edges'>> = (props) => (
+export const KeyboardSafeArea: React.FC<
+  Omit<SafeAreaWrapperProps, 'edges'>
+> = props => (
   <SafeAreaWrapper
     {...props}
     edges={['top', 'left', 'right']}

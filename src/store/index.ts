@@ -34,7 +34,7 @@ const rootReducer = combineReducers({
   [userApi.reducerPath]: userApi.reducer,
   [audioApi.reducerPath]: audioApi.reducer,
   [symbolApi.reducerPath]: symbolApi.reducer,
-  
+
   // Feature slices
   user: userSlice,
   navigation: navigationSlice,
@@ -49,11 +49,24 @@ const persistedReducer = persistReducer(persistConfig, rootReducer);
 // Configure store
 export const store = configureStore({
   reducer: persistedReducer,
-  middleware: (getDefaultMiddleware) =>
+  middleware: getDefaultMiddleware =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE', 'navigation/navigateToPage'],
-        ignoredPaths: ['navigation.history'],
+        ignoredActions: [
+          'persist/PERSIST',
+          'persist/REHYDRATE',
+          'navigation/navigateToPage',
+          'user/setCurrentUser',
+        ],
+        ignoredPaths: [
+          'navigation.history',
+          'payload.createdAt',
+          'payload.updatedAt',
+          'user.currentUser.createdAt',
+          'user.currentUser.updatedAt',
+          'user.users.*.createdAt',
+          'user.users.*.updatedAt',
+        ],
       },
     })
       .concat(communicationApi.middleware)

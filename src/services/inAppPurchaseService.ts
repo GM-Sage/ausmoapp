@@ -34,13 +34,13 @@ class InAppPurchaseService {
   async initialize(): Promise<void> {
     try {
       console.log('Initializing In-App Purchase Service...');
-      
+
       // In a real app, you would initialize the platform-specific IAP service here
       // For now, we'll simulate the initialization
-      
+
       // Load previously purchased items
       await this.loadPurchasedItems();
-      
+
       console.log('In-App Purchase Service initialized successfully');
     } catch (error) {
       console.error('Failed to initialize IAP service:', error);
@@ -130,10 +130,10 @@ class InAppPurchaseService {
   async purchaseItem(itemId: string): Promise<PurchaseResult> {
     try {
       console.log(`Attempting to purchase item: ${itemId}`);
-      
+
       // In a real app, you would call the platform-specific purchase method here
       // For now, we'll simulate the purchase process
-      
+
       const item = this.getAvailableItems().find(i => i.id === itemId);
       if (!item) {
         return {
@@ -151,13 +151,13 @@ class InAppPurchaseService {
 
       // Simulate purchase process
       await this.simulatePurchase(item);
-      
+
       // Mark as purchased
       this.purchasedItems.add(itemId);
       await this.savePurchasedItems();
-      
+
       console.log(`Successfully purchased item: ${itemId}`);
-      
+
       return {
         success: true,
         itemId,
@@ -175,24 +175,26 @@ class InAppPurchaseService {
   async restorePurchases(): Promise<PurchaseResult[]> {
     try {
       console.log('Restoring purchases...');
-      
+
       // In a real app, you would call the platform-specific restore method here
       // For now, we'll simulate the restore process
-      
+
       const results: PurchaseResult[] = [];
-      
+
       // Simulate restoring purchases
       await this.loadPurchasedItems();
-      
+
       console.log('Purchases restored successfully');
-      
+
       return results;
     } catch (error) {
       console.error('Restore purchases failed:', error);
-      return [{
-        success: false,
-        error: (error as Error).message || 'Restore failed',
-      }];
+      return [
+        {
+          success: false,
+          error: (error as Error).message || 'Restore failed',
+        },
+      ];
     }
   }
 
@@ -211,7 +213,8 @@ class InAppPurchaseService {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
         // Simulate success/failure
-        if (Math.random() > 0.1) { // 90% success rate
+        if (Math.random() > 0.1) {
+          // 90% success rate
           resolve();
         } else {
           reject(new Error('Purchase simulation failed'));
@@ -226,11 +229,11 @@ class InAppPurchaseService {
       // In a real app, you would load from secure storage
       // For now, we'll use a simple simulation
       console.log('Loading purchased items...');
-      
+
       // Simulate loading some purchased items
       this.purchasedItems.add('symbolstix-library');
       this.purchasedItems.add('acapela-female-voices');
-      
+
       console.log('Purchased items loaded:', Array.from(this.purchasedItems));
     } catch (error) {
       console.error('Failed to load purchased items:', error);
@@ -249,7 +252,7 @@ class InAppPurchaseService {
 
   // Show purchase dialog
   async showPurchaseDialog(item: PurchaseItem): Promise<boolean> {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       Alert.alert(
         `Purchase ${item.name}`,
         `${item.description}\n\nPrice: $${item.price.toFixed(2)}`,
@@ -307,7 +310,7 @@ class InAppPurchaseService {
     const premiumVoiceItems = this.getAvailableItems().filter(
       item => item.type === 'voice' && this.isItemPurchased(item.id)
     );
-    
+
     return premiumVoiceItems.map(item => item.id);
   }
 
@@ -316,7 +319,7 @@ class InAppPurchaseService {
     const premiumLibraryItems = this.getAvailableItems().filter(
       item => item.type === 'symbol-library' && this.isItemPurchased(item.id)
     );
-    
+
     return premiumLibraryItems.map(item => item.id);
   }
 
@@ -325,7 +328,7 @@ class InAppPurchaseService {
     const premiumBookItems = this.getAvailableItems().filter(
       item => item.type === 'premade-book' && this.isItemPurchased(item.id)
     );
-    
+
     return premiumBookItems.map(item => item.id);
   }
 }

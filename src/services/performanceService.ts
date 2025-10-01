@@ -134,14 +134,14 @@ class PerformanceService {
   // Launch Time Optimization
   async measureLaunchTime(): Promise<number> {
     const startTime = performance.now();
-    
+
     try {
       // Simulate app launch process
       await this.optimizeLaunchProcess();
-      
+
       const launchTime = performance.now() - startTime;
       this.metrics.launchTime = launchTime;
-      
+
       console.log(`App launch time: ${launchTime.toFixed(2)}ms`);
       return launchTime;
     } catch (error) {
@@ -162,57 +162,66 @@ class PerformanceService {
   private async preloadCriticalResources(): Promise<void> {
     // Preload critical resources
     console.log('Preloading critical resources...');
-    
+
     // Preload essential symbols
     const symbolService = require('./symbolDataService').default;
     await symbolService.getAllSymbols();
-    
+
     // Preload user settings
     // Preload core vocabulary
     // Preload essential templates
-    
+
     console.log('Critical resources preloaded');
   }
 
   private async initializeCoreServices(): Promise<void> {
     // Initialize core services in parallel
     console.log('Initializing core services...');
-    
+
     const services = [
       require('./audioService').default,
       require('./databaseService').default,
       require('./analyticsService').default,
     ];
-    
+
     await Promise.all(services.map(service => service.initialize()));
-    
+
+    // Initialize SymbolDataService after database is ready
+    const SymbolDataService = require('./symbolDataService').default;
+    await SymbolDataService.getInstance().initialize();
+
     console.log('Core services initialized');
   }
 
   private async setupPerformanceOptimizations(): Promise<void> {
     // Setup performance optimizations
     console.log('Setting up performance optimizations...');
-    
+
     // Enable hardware acceleration
     // Setup memory management
     // Configure animation optimizations
     // Setup audio optimizations
-    
+
     console.log('Performance optimizations configured');
   }
 
   // Navigation Performance
-  async measureNavigationTime(fromScreen: string, toScreen: string): Promise<number> {
+  async measureNavigationTime(
+    fromScreen: string,
+    toScreen: string
+  ): Promise<number> {
     const startTime = performance.now();
-    
+
     try {
       // Simulate navigation process
       await this.optimizeNavigation(fromScreen, toScreen);
-      
+
       const navigationTime = performance.now() - startTime;
       this.metrics.navigationTime = navigationTime;
-      
-      console.log(`Navigation time (${fromScreen} -> ${toScreen}): ${navigationTime.toFixed(2)}ms`);
+
+      console.log(
+        `Navigation time (${fromScreen} -> ${toScreen}): ${navigationTime.toFixed(2)}ms`
+      );
       return navigationTime;
     } catch (error) {
       console.error('Error measuring navigation time:', error);
@@ -220,7 +229,10 @@ class PerformanceService {
     }
   }
 
-  private async optimizeNavigation(fromScreen: string, toScreen: string): Promise<void> {
+  private async optimizeNavigation(
+    fromScreen: string,
+    toScreen: string
+  ): Promise<void> {
     // Implement navigation optimizations
     await this.preloadScreenResources(toScreen);
     await this.optimizeScreenTransition(fromScreen, toScreen);
@@ -229,36 +241,39 @@ class PerformanceService {
   private async preloadScreenResources(screenName: string): Promise<void> {
     // Preload resources for the target screen
     console.log(`Preloading resources for ${screenName}...`);
-    
+
     // Preload screen-specific data
     // Preload images and assets
     // Preload API data
-    
+
     console.log(`Resources preloaded for ${screenName}`);
   }
 
-  private async optimizeScreenTransition(fromScreen: string, toScreen: string): Promise<void> {
+  private async optimizeScreenTransition(
+    fromScreen: string,
+    toScreen: string
+  ): Promise<void> {
     // Optimize screen transition
     console.log(`Optimizing transition from ${fromScreen} to ${toScreen}...`);
-    
+
     // Use hardware acceleration
     // Minimize layout calculations
     // Optimize animation performance
-    
+
     console.log(`Transition optimized`);
   }
 
   // Audio Latency Optimization
   async measureAudioLatency(): Promise<number> {
     const startTime = performance.now();
-    
+
     try {
       // Simulate audio processing
       await this.optimizeAudioProcessing();
-      
+
       const audioLatency = performance.now() - startTime;
       this.metrics.audioLatency = audioLatency;
-      
+
       console.log(`Audio latency: ${audioLatency.toFixed(2)}ms`);
       return audioLatency;
     } catch (error) {
@@ -276,22 +291,22 @@ class PerformanceService {
   private async setupAudioOptimizations(): Promise<void> {
     // Setup audio optimizations
     console.log('Setting up audio optimizations...');
-    
+
     // Configure audio buffer size
     // Setup audio processing pipeline
     // Enable audio hardware acceleration
-    
+
     console.log('Audio optimizations configured');
   }
 
   private async optimizeAudioBuffer(): Promise<void> {
     // Optimize audio buffer
     console.log('Optimizing audio buffer...');
-    
+
     // Minimize buffer size
     // Optimize audio processing
     // Reduce audio latency
-    
+
     console.log('Audio buffer optimized');
   }
 
@@ -301,7 +316,7 @@ class PerformanceService {
       // Measure animation FPS
       const fps = await this.optimizeAnimations();
       this.metrics.animationFPS = fps;
-      
+
       console.log(`Animation FPS: ${fps}`);
       return fps;
     } catch (error) {
@@ -319,11 +334,11 @@ class PerformanceService {
   private async setupAnimationOptimizations(): Promise<void> {
     // Setup animation optimizations
     console.log('Setting up animation optimizations...');
-    
+
     // Enable hardware acceleration
     // Optimize animation performance
     // Reduce animation complexity
-    
+
     console.log('Animation optimizations configured');
   }
 
@@ -333,7 +348,7 @@ class PerformanceService {
       // Measure memory usage
       const memoryUsage = await this.optimizeMemoryUsage();
       this.metrics.memoryUsage = memoryUsage;
-      
+
       console.log(`Memory usage: ${memoryUsage.toFixed(2)}MB`);
       return memoryUsage;
     } catch (error) {
@@ -352,22 +367,22 @@ class PerformanceService {
   private async cleanupUnusedResources(): Promise<void> {
     // Cleanup unused resources
     console.log('Cleaning up unused resources...');
-    
+
     // Clear unused caches
     // Release unused memory
     // Optimize resource usage
-    
+
     console.log('Unused resources cleaned up');
   }
 
   private async optimizeMemoryAllocation(): Promise<void> {
     // Optimize memory allocation
     console.log('Optimizing memory allocation...');
-    
+
     // Use object pooling
     // Optimize data structures
     // Reduce memory fragmentation
-    
+
     console.log('Memory allocation optimized');
   }
 
@@ -378,16 +393,16 @@ class PerformanceService {
       await this.measureAudioLatency();
       await this.measureAnimationFPS();
       await this.measureMemoryUsage();
-      
+
       // Generate performance report
       const report = await this.generatePerformanceReport();
       this.performanceHistory.push(report);
-      
+
       // Keep only last 100 reports
       if (this.performanceHistory.length > 100) {
         this.performanceHistory = this.performanceHistory.slice(-100);
       }
-      
+
       // Check for performance violations
       if (report.violations.length > 0) {
         await this.handlePerformanceViolations(report.violations);
@@ -408,7 +423,10 @@ class PerformanceService {
         metric: 'launchTime',
         currentValue: this.metrics.launchTime,
         threshold: this.thresholds.maxLaunchTime,
-        severity: this.metrics.launchTime > this.thresholds.maxLaunchTime * 2 ? 'critical' : 'high',
+        severity:
+          this.metrics.launchTime > this.thresholds.maxLaunchTime * 2
+            ? 'critical'
+            : 'high',
         description: 'App launch time exceeds threshold',
         impact: 'Poor user experience, app feels slow',
       });
@@ -421,7 +439,10 @@ class PerformanceService {
         metric: 'navigationTime',
         currentValue: this.metrics.navigationTime,
         threshold: this.thresholds.maxNavigationTime,
-        severity: this.metrics.navigationTime > this.thresholds.maxNavigationTime * 2 ? 'critical' : 'high',
+        severity:
+          this.metrics.navigationTime > this.thresholds.maxNavigationTime * 2
+            ? 'critical'
+            : 'high',
         description: 'Navigation time exceeds threshold',
         impact: 'Slow screen transitions, poor responsiveness',
       });
@@ -434,7 +455,10 @@ class PerformanceService {
         metric: 'audioLatency',
         currentValue: this.metrics.audioLatency,
         threshold: this.thresholds.maxAudioLatency,
-        severity: this.metrics.audioLatency > this.thresholds.maxAudioLatency * 2 ? 'critical' : 'high',
+        severity:
+          this.metrics.audioLatency > this.thresholds.maxAudioLatency * 2
+            ? 'critical'
+            : 'high',
         description: 'Audio latency exceeds threshold',
         impact: 'Delayed audio feedback, poor user experience',
       });
@@ -447,11 +471,16 @@ class PerformanceService {
         metric: 'animationFPS',
         currentValue: this.metrics.animationFPS,
         threshold: this.thresholds.minAnimationFPS,
-        severity: this.metrics.animationFPS < this.thresholds.minAnimationFPS * 0.5 ? 'critical' : 'medium',
+        severity:
+          this.metrics.animationFPS < this.thresholds.minAnimationFPS * 0.5
+            ? 'critical'
+            : 'medium',
         description: 'Animation FPS below threshold',
         impact: 'Choppy animations, poor visual experience',
       });
-      recommendations.push('Optimize animation performance and enable hardware acceleration');
+      recommendations.push(
+        'Optimize animation performance and enable hardware acceleration'
+      );
     }
 
     // Check memory usage
@@ -460,11 +489,16 @@ class PerformanceService {
         metric: 'memoryUsage',
         currentValue: this.metrics.memoryUsage,
         threshold: this.thresholds.maxMemoryUsage,
-        severity: this.metrics.memoryUsage > this.thresholds.maxMemoryUsage * 2 ? 'critical' : 'medium',
+        severity:
+          this.metrics.memoryUsage > this.thresholds.maxMemoryUsage * 2
+            ? 'critical'
+            : 'medium',
         description: 'Memory usage exceeds threshold',
         impact: 'App may crash, poor performance',
       });
-      recommendations.push('Optimize memory usage and implement cleanup strategies');
+      recommendations.push(
+        'Optimize memory usage and implement cleanup strategies'
+      );
     }
 
     // Calculate overall score
@@ -483,7 +517,7 @@ class PerformanceService {
 
   private calculateOverallScore(violations: PerformanceViolation[]): number {
     let score = 100;
-    
+
     violations.forEach(violation => {
       switch (violation.severity) {
         case 'critical':
@@ -500,12 +534,14 @@ class PerformanceService {
           break;
       }
     });
-    
+
     return Math.max(0, score);
   }
 
   // Performance Violation Handling
-  private async handlePerformanceViolations(violations: PerformanceViolation[]): Promise<void> {
+  private async handlePerformanceViolations(
+    violations: PerformanceViolation[]
+  ): Promise<void> {
     for (const violation of violations) {
       if (violation.severity === 'critical' || violation.severity === 'high') {
         await this.applyOptimizationStrategy(violation.metric);
@@ -513,18 +549,25 @@ class PerformanceService {
     }
   }
 
-  private async applyOptimizationStrategy(metric: keyof PerformanceMetrics): Promise<void> {
-    const strategy = this.optimizationStrategies.find(s => 
+  private async applyOptimizationStrategy(
+    metric: keyof PerformanceMetrics
+  ): Promise<void> {
+    const strategy = this.optimizationStrategies.find(s =>
       s.targetMetrics.includes(metric)
     );
-    
+
     if (strategy) {
       console.log(`Applying optimization strategy: ${strategy.name}`);
       try {
         await strategy.implementation();
-        console.log(`Optimization strategy applied successfully: ${strategy.name}`);
+        console.log(
+          `Optimization strategy applied successfully: ${strategy.name}`
+        );
       } catch (error) {
-        console.error(`Error applying optimization strategy: ${strategy.name}`, error);
+        console.error(
+          `Error applying optimization strategy: ${strategy.name}`,
+          error
+        );
       }
     }
   }
@@ -593,21 +636,21 @@ class PerformanceService {
   // Performance Testing
   async runPerformanceTests(): Promise<PerformanceReport> {
     console.log('Running performance tests...');
-    
+
     // Measure all performance metrics
     await this.measureLaunchTime();
     await this.measureNavigationTime('test', 'test');
     await this.measureAudioLatency();
     await this.measureAnimationFPS();
     await this.measureMemoryUsage();
-    
+
     // Generate comprehensive report
     const report = await this.generatePerformanceReport();
-    
+
     console.log('Performance tests completed');
     console.log(`Overall Score: ${report.overallScore}/100`);
     console.log(`Violations: ${report.violations.length}`);
-    
+
     return report;
   }
 

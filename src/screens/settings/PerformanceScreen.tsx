@@ -1,6 +1,8 @@
 // Performance Monitoring Screen
 
 import React, { useState, useEffect } from 'react';
+import { getThemeColors } from '../../utils/themeUtils';
+import { useVisualSettings } from '../../contexts/VisualSettingsContext';
 import {
   View,
   Text,
@@ -15,16 +17,20 @@ import { useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 
 import { RootState } from '../../store';
-import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../../constants';
-import PerformanceService, { 
-  PerformanceMetrics, 
-  PerformanceReport, 
-  OptimizationStrategy 
+import { deserializeUserForService } from '../../store/slices/userSlice';
+import { TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../../constants';
+import PerformanceService, {
+  PerformanceMetrics,
+  PerformanceReport,
+  OptimizationStrategy,
 } from '../../services/performanceService';
 
 const { width } = Dimensions.get('window');
 
 export default function PerformanceScreen() {
+  const { theme } = useVisualSettings();
+  const safeTheme = theme || 'light'; // Ensure theme is never undefined
+  const themeColors = getThemeColors(safeTheme);
   const currentUser = useSelector((state: RootState) => state.user.currentUser);
   const [performanceService] = useState(() => PerformanceService.getInstance());
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
@@ -32,7 +38,9 @@ export default function PerformanceScreen() {
   const [strategies, setStrategies] = useState<OptimizationStrategy[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isRunningTests, setIsRunningTests] = useState(false);
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'metrics' | 'reports' | 'optimization'>('overview');
+  const [selectedTab, setSelectedTab] = useState<
+    'overview' | 'metrics' | 'reports' | 'optimization'
+  >('overview');
 
   useEffect(() => {
     if (currentUser) {
@@ -45,14 +53,17 @@ export default function PerformanceScreen() {
 
     try {
       setIsLoading(true);
-      await performanceService.initialize(currentUser);
-      
-      const [currentMetrics, history, optimizationStrategies] = await Promise.all([
-        performanceService.getCurrentMetrics(),
-        performanceService.getPerformanceHistory(),
-        performanceService.getOptimizationStrategies(),
-      ]);
-      
+      await performanceService.initialize(
+        deserializeUserForService(currentUser)
+      );
+
+      const [currentMetrics, history, optimizationStrategies] =
+        await Promise.all([
+          performanceService.getCurrentMetrics(),
+          performanceService.getPerformanceHistory(),
+          performanceService.getOptimizationStrategies(),
+        ]);
+
       setMetrics(currentMetrics);
       setReports(history);
       setStrategies(optimizationStrategies);
@@ -70,7 +81,7 @@ export default function PerformanceScreen() {
       const report = await performanceService.runPerformanceTests();
       setReports(prev => [...prev, report]);
       setMetrics(report.metrics);
-      
+
       Alert.alert(
         'Performance Tests Completed',
         `Overall Score: ${report.overallScore}/100\n\nViolations: ${report.violations.length}\nRecommendations: ${report.recommendations.length}`,
@@ -87,14 +98,20 @@ export default function PerformanceScreen() {
   const handleOptimizationStrategy = async (strategy: OptimizationStrategy) => {
     try {
       await strategy.implementation();
-      Alert.alert('Success', `Optimization strategy "${strategy.name}" applied successfully`);
+      Alert.alert(
+        'Success',
+        `Optimization strategy "${strategy.name}" applied successfully`
+      );
     } catch (error) {
       console.error('Error applying optimization strategy:', error);
       Alert.alert('Error', 'Failed to apply optimization strategy');
     }
   };
 
-  const getMetricColor = (metric: keyof PerformanceMetrics, value: number): string => {
+  const getMetricColor = (
+    metric: keyof PerformanceMetrics,
+    value: number
+  ): string => {
     const thresholds = {
       launchTime: 3000,
       navigationTime: 500,
@@ -108,12 +125,23 @@ export default function PerformanceScreen() {
 
     const threshold = thresholds[metric];
     if (metric === 'animationFPS') {
-      return value >= threshold ? COLORS.SUCCESS : value >= threshold * 0.8 ? COLORS.WARNING : COLORS.ERROR;
+      return value >= threshold
+        ? themeColors.success
+        : value >= threshold * 0.8
+          ? themeColors.warning
+          : themeColors.error;
     }
-    return value <= threshold ? COLORS.SUCCESS : value <= threshold * 1.2 ? COLORS.WARNING : COLORS.ERROR;
+    return value <= threshold
+      ? themeColors.success
+      : value <= threshold * 1.2
+        ? themeColors.warning
+        : themeColors.error;
   };
 
-  const getMetricStatus = (metric: keyof PerformanceMetrics, value: number): string => {
+  const getMetricStatus = (
+    metric: keyof PerformanceMetrics,
+    value: number
+  ): string => {
     const thresholds = {
       launchTime: 3000,
       navigationTime: 500,
@@ -127,16 +155,26 @@ export default function PerformanceScreen() {
 
     const threshold = thresholds[metric];
     if (metric === 'animationFPS') {
-      return value >= threshold ? 'Excellent' : value >= threshold * 0.8 ? 'Good' : 'Needs Improvement';
+      return value >= threshold
+        ? 'Excellent'
+        : value >= threshold * 0.8
+          ? 'Good'
+          : 'Needs Improvement';
     }
-    return value <= threshold ? 'Excellent' : value <= threshold * 1.2 ? 'Good' : 'Needs Improvement';
+    return value <= threshold
+      ? 'Excellent'
+      : value <= threshold * 1.2
+        ? 'Good'
+        : 'Needs Improvement';
   };
 
   const renderOverview = () => {
     if (!metrics) return null;
 
-    const overallScore = reports.length > 0 ? reports[reports.length - 1].overallScore : 0;
-    const violations = reports.length > 0 ? reports[reports.length - 1].violations.length : 0;
+    const overallScore =
+      reports.length > 0 ? reports[reports.length - 1].overallScore : 0;
+    const violations =
+      reports.length > 0 ? reports[reports.length - 1].violations.length : 0;
 
     return (
       <View style={styles.overviewContainer}>
@@ -144,45 +182,89 @@ export default function PerformanceScreen() {
         <View style={styles.scoreCard}>
           <Text style={styles.scoreTitle}>Overall Performance Score</Text>
           <View style={styles.scoreContainer}>
-            <Text style={[
-              styles.scoreValue,
-              { color: overallScore >= 80 ? COLORS.SUCCESS : overallScore >= 60 ? COLORS.WARNING : COLORS.ERROR }
-            ]}>
+            <Text
+              style={[
+                styles.scoreValue,
+                {
+                  color:
+                    overallScore >= 80
+                      ? themeColors.success
+                      : overallScore >= 60
+                        ? themeColors.warning
+                        : themeColors.error,
+                },
+              ]}
+            >
               {overallScore}
             </Text>
             <Text style={styles.scoreMax}>/100</Text>
           </View>
           <Text style={styles.scoreDescription}>
-            {overallScore >= 80 ? 'Excellent Performance' : 
-             overallScore >= 60 ? 'Good Performance' : 'Needs Improvement'}
+            {overallScore >= 80
+              ? 'Excellent Performance'
+              : overallScore >= 60
+                ? 'Good Performance'
+                : 'Needs Improvement'}
           </Text>
         </View>
 
         {/* Key Metrics */}
         <View style={styles.metricsGrid}>
           <View style={styles.metricCard}>
-            <Ionicons name="rocket" size={24} color={getMetricColor('launchTime', metrics.launchTime)} />
-            <Text style={styles.metricValue}>{metrics.launchTime.toFixed(0)}ms</Text>
+            <Ionicons
+              name="rocket"
+              size={24}
+              color={getMetricColor('launchTime', metrics.launchTime)}
+            />
+            <Text style={styles.metricValue}>
+              {metrics.launchTime.toFixed(0)}ms
+            </Text>
             <Text style={styles.metricLabel}>Launch Time</Text>
-            <Text style={styles.metricStatus}>{getMetricStatus('launchTime', metrics.launchTime)}</Text>
+            <Text style={styles.metricStatus}>
+              {getMetricStatus('launchTime', metrics.launchTime)}
+            </Text>
           </View>
           <View style={styles.metricCard}>
-            <Ionicons name="navigate" size={24} color={getMetricColor('navigationTime', metrics.navigationTime)} />
-            <Text style={styles.metricValue}>{metrics.navigationTime.toFixed(0)}ms</Text>
+            <Ionicons
+              name="navigate"
+              size={24}
+              color={getMetricColor('navigationTime', metrics.navigationTime)}
+            />
+            <Text style={styles.metricValue}>
+              {metrics.navigationTime.toFixed(0)}ms
+            </Text>
             <Text style={styles.metricLabel}>Navigation</Text>
-            <Text style={styles.metricStatus}>{getMetricStatus('navigationTime', metrics.navigationTime)}</Text>
+            <Text style={styles.metricStatus}>
+              {getMetricStatus('navigationTime', metrics.navigationTime)}
+            </Text>
           </View>
           <View style={styles.metricCard}>
-            <Ionicons name="volume-high" size={24} color={getMetricColor('audioLatency', metrics.audioLatency)} />
-            <Text style={styles.metricValue}>{metrics.audioLatency.toFixed(0)}ms</Text>
+            <Ionicons
+              name="volume-high"
+              size={24}
+              color={getMetricColor('audioLatency', metrics.audioLatency)}
+            />
+            <Text style={styles.metricValue}>
+              {metrics.audioLatency.toFixed(0)}ms
+            </Text>
             <Text style={styles.metricLabel}>Audio Latency</Text>
-            <Text style={styles.metricStatus}>{getMetricStatus('audioLatency', metrics.audioLatency)}</Text>
+            <Text style={styles.metricStatus}>
+              {getMetricStatus('audioLatency', metrics.audioLatency)}
+            </Text>
           </View>
           <View style={styles.metricCard}>
-            <Ionicons name="play" size={24} color={getMetricColor('animationFPS', metrics.animationFPS)} />
-            <Text style={styles.metricValue}>{metrics.animationFPS.toFixed(0)} FPS</Text>
+            <Ionicons
+              name="play"
+              size={24}
+              color={getMetricColor('animationFPS', metrics.animationFPS)}
+            />
+            <Text style={styles.metricValue}>
+              {metrics.animationFPS.toFixed(0)} FPS
+            </Text>
             <Text style={styles.metricLabel}>Animations</Text>
-            <Text style={styles.metricStatus}>{getMetricStatus('animationFPS', metrics.animationFPS)}</Text>
+            <Text style={styles.metricStatus}>
+              {getMetricStatus('animationFPS', metrics.animationFPS)}
+            </Text>
           </View>
         </View>
 
@@ -190,19 +272,25 @@ export default function PerformanceScreen() {
         <View style={styles.summaryCard}>
           <Text style={styles.summaryTitle}>Performance Summary</Text>
           <View style={styles.summaryItem}>
-            <Ionicons name="checkmark-circle" size={20} color={COLORS.SUCCESS} />
+            <Ionicons
+              name="checkmark-circle"
+              size={20}
+              color={themeColors.success}
+            />
             <Text style={styles.summaryText}>
-              {violations === 0 ? 'No performance violations detected' : `${violations} performance violations found`}
+              {violations === 0
+                ? 'No performance violations detected'
+                : `${violations} performance violations found`}
             </Text>
           </View>
           <View style={styles.summaryItem}>
-            <Ionicons name="trending-up" size={20} color={COLORS.INFO} />
+            <Ionicons name="trending-up" size={20} color={themeColors.info} />
             <Text style={styles.summaryText}>
               {reports.length} performance reports generated
             </Text>
           </View>
           <View style={styles.summaryItem}>
-            <Ionicons name="settings" size={20} color={COLORS.WARNING} />
+            <Ionicons name="settings" size={20} color={themeColors.warning} />
             <Text style={styles.summaryText}>
               {strategies.length} optimization strategies available
             </Text>
@@ -217,9 +305,9 @@ export default function PerformanceScreen() {
             disabled={isRunningTests}
           >
             {isRunningTests ? (
-              <ActivityIndicator size="small" color={COLORS.SURFACE} />
+              <ActivityIndicator size="small" color={themeColors.surface} />
             ) : (
-              <Ionicons name="play" size={20} color={COLORS.SURFACE} />
+              <Ionicons name="play" size={20} color={themeColors.surface} />
             )}
             <Text style={styles.actionButtonText}>
               {isRunningTests ? 'Running Tests...' : 'Run Performance Tests'}
@@ -234,37 +322,104 @@ export default function PerformanceScreen() {
     if (!metrics) return null;
 
     const metricItems = [
-      { key: 'launchTime', label: 'Launch Time', value: `${metrics.launchTime.toFixed(0)}ms`, threshold: '3000ms', icon: 'rocket' },
-      { key: 'navigationTime', label: 'Navigation Time', value: `${metrics.navigationTime.toFixed(0)}ms`, threshold: '500ms', icon: 'navigate' },
-      { key: 'audioLatency', label: 'Audio Latency', value: `${metrics.audioLatency.toFixed(0)}ms`, threshold: '200ms', icon: 'volume-high' },
-      { key: 'animationFPS', label: 'Animation FPS', value: `${metrics.animationFPS.toFixed(0)} FPS`, threshold: '60 FPS', icon: 'play' },
-      { key: 'memoryUsage', label: 'Memory Usage', value: `${metrics.memoryUsage.toFixed(0)}MB`, threshold: '100MB', icon: 'hardware-chip' },
-      { key: 'cpuUsage', label: 'CPU Usage', value: `${metrics.cpuUsage.toFixed(0)}%`, threshold: '80%', icon: 'speedometer' },
-      { key: 'batteryUsage', label: 'Battery Usage', value: `${metrics.batteryUsage.toFixed(0)}%`, threshold: '5%', icon: 'battery-half' },
-      { key: 'networkLatency', label: 'Network Latency', value: `${metrics.networkLatency.toFixed(0)}ms`, threshold: '1000ms', icon: 'globe' },
+      {
+        key: 'launchTime',
+        label: 'Launch Time',
+        value: `${metrics.launchTime.toFixed(0)}ms`,
+        threshold: '3000ms',
+        icon: 'rocket',
+      },
+      {
+        key: 'navigationTime',
+        label: 'Navigation Time',
+        value: `${metrics.navigationTime.toFixed(0)}ms`,
+        threshold: '500ms',
+        icon: 'navigate',
+      },
+      {
+        key: 'audioLatency',
+        label: 'Audio Latency',
+        value: `${metrics.audioLatency.toFixed(0)}ms`,
+        threshold: '200ms',
+        icon: 'volume-high',
+      },
+      {
+        key: 'animationFPS',
+        label: 'Animation FPS',
+        value: `${metrics.animationFPS.toFixed(0)} FPS`,
+        threshold: '60 FPS',
+        icon: 'play',
+      },
+      {
+        key: 'memoryUsage',
+        label: 'Memory Usage',
+        value: `${metrics.memoryUsage.toFixed(0)}MB`,
+        threshold: '100MB',
+        icon: 'hardware-chip',
+      },
+      {
+        key: 'cpuUsage',
+        label: 'CPU Usage',
+        value: `${metrics.cpuUsage.toFixed(0)}%`,
+        threshold: '80%',
+        icon: 'speedometer',
+      },
+      {
+        key: 'batteryUsage',
+        label: 'Battery Usage',
+        value: `${metrics.batteryUsage.toFixed(0)}%`,
+        threshold: '5%',
+        icon: 'battery-half',
+      },
+      {
+        key: 'networkLatency',
+        label: 'Network Latency',
+        value: `${metrics.networkLatency.toFixed(0)}ms`,
+        threshold: '1000ms',
+        icon: 'globe',
+      },
     ];
 
     return (
       <View style={styles.metricsContainer}>
-        {metricItems.map((item) => (
+        {metricItems.map(item => (
           <View key={item.key} style={styles.metricItem}>
             <View style={styles.metricHeader}>
               <View style={styles.metricInfo}>
-                <Ionicons name={item.icon as any} size={24} color={getMetricColor(item.key as keyof PerformanceMetrics, metrics[item.key as keyof PerformanceMetrics])} />
+                <Ionicons
+                  name={item.icon as any}
+                  size={24}
+                  color={getMetricColor(
+                    item.key as keyof PerformanceMetrics,
+                    metrics[item.key as keyof PerformanceMetrics]
+                  )}
+                />
                 <View style={styles.metricDetails}>
                   <Text style={styles.metricName}>{item.label}</Text>
-                  <Text style={styles.metricThreshold}>Threshold: {item.threshold}</Text>
+                  <Text style={styles.metricThreshold}>
+                    Threshold: {item.threshold}
+                  </Text>
                 </View>
               </View>
               <View style={styles.metricValueContainer}>
-                <Text style={[
-                  styles.metricValueText,
-                  { color: getMetricColor(item.key as keyof PerformanceMetrics, metrics[item.key as keyof PerformanceMetrics]) }
-                ]}>
+                <Text
+                  style={[
+                    styles.metricValueText,
+                    {
+                      color: getMetricColor(
+                        item.key as keyof PerformanceMetrics,
+                        metrics[item.key as keyof PerformanceMetrics]
+                      ),
+                    },
+                  ]}
+                >
                   {item.value}
                 </Text>
                 <Text style={styles.metricStatusText}>
-                  {getMetricStatus(item.key as keyof PerformanceMetrics, metrics[item.key as keyof PerformanceMetrics])}
+                  {getMetricStatus(
+                    item.key as keyof PerformanceMetrics,
+                    metrics[item.key as keyof PerformanceMetrics]
+                  )}
                 </Text>
               </View>
             </View>
@@ -279,69 +434,102 @@ export default function PerformanceScreen() {
       <View style={styles.reportsContainer}>
         {reports.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="document-text" size={48} color={COLORS.TEXT_SECONDARY} />
+            <Ionicons
+              name="document-text"
+              size={48}
+              color={themeColors.textSecondary}
+            />
             <Text style={styles.emptyStateTitle}>No Performance Reports</Text>
             <Text style={styles.emptyStateText}>
-              Run performance tests to generate reports and track performance over time.
+              Run performance tests to generate reports and track performance
+              over time.
             </Text>
-            <TouchableOpacity style={styles.emptyStateButton} onPress={handleRunPerformanceTests}>
-              <Text style={styles.emptyStateButtonText}>Run Performance Tests</Text>
+            <TouchableOpacity
+              style={styles.emptyStateButton}
+              onPress={handleRunPerformanceTests}
+            >
+              <Text style={styles.emptyStateButtonText}>
+                Run Performance Tests
+              </Text>
             </TouchableOpacity>
           </View>
         ) : (
-          reports.slice().reverse().map((report, index) => (
-            <View key={index} style={styles.reportCard}>
-              <View style={styles.reportHeader}>
-                <Text style={styles.reportDate}>
-                  {report.timestamp.toLocaleDateString()} {report.timestamp.toLocaleTimeString()}
-                </Text>
-                <View style={[
-                  styles.reportScore,
-                  { backgroundColor: report.overallScore >= 80 ? COLORS.SUCCESS : 
-                                   report.overallScore >= 60 ? COLORS.WARNING : COLORS.ERROR }
-                ]}>
-                  <Text style={styles.reportScoreText}>{report.overallScore}</Text>
+          reports
+            .slice()
+            .reverse()
+            .map((report, index) => (
+              <View key={index} style={styles.reportCard}>
+                <View style={styles.reportHeader}>
+                  <Text style={styles.reportDate}>
+                    {report.timestamp.toLocaleDateString()}{' '}
+                    {report.timestamp.toLocaleTimeString()}
+                  </Text>
+                  <View
+                    style={[
+                      styles.reportScore,
+                      {
+                        backgroundColor:
+                          report.overallScore >= 80
+                            ? themeColors.success
+                            : report.overallScore >= 60
+                              ? themeColors.warning
+                              : themeColors.error,
+                      },
+                    ]}
+                  >
+                    <Text style={styles.reportScoreText}>
+                      {report.overallScore}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-              
-              <View style={styles.reportMetrics}>
-                <Text style={styles.reportMetricsTitle}>Key Metrics:</Text>
-                <Text style={styles.reportMetricsText}>
-                  Launch: {report.metrics.launchTime.toFixed(0)}ms | 
-                  Navigation: {report.metrics.navigationTime.toFixed(0)}ms | 
-                  Audio: {report.metrics.audioLatency.toFixed(0)}ms | 
-                  FPS: {report.metrics.animationFPS.toFixed(0)}
-                </Text>
-              </View>
 
-              {report.violations.length > 0 && (
-                <View style={styles.reportViolations}>
-                  <Text style={styles.reportViolationsTitle}>Violations ({report.violations.length}):</Text>
-                  {report.violations.slice(0, 3).map((violation, vIndex) => (
-                    <Text key={vIndex} style={styles.reportViolationText}>
-                      • {violation.description}
-                    </Text>
-                  ))}
-                  {report.violations.length > 3 && (
-                    <Text style={styles.reportViolationText}>
-                      • ... and {report.violations.length - 3} more
-                    </Text>
-                  )}
+                <View style={styles.reportMetrics}>
+                  <Text style={styles.reportMetricsTitle}>Key Metrics:</Text>
+                  <Text style={styles.reportMetricsText}>
+                    Launch: {report.metrics.launchTime.toFixed(0)}ms |
+                    Navigation: {report.metrics.navigationTime.toFixed(0)}ms |
+                    Audio: {report.metrics.audioLatency.toFixed(0)}ms | FPS:{' '}
+                    {report.metrics.animationFPS.toFixed(0)}
+                  </Text>
                 </View>
-              )}
 
-              {report.recommendations.length > 0 && (
-                <View style={styles.reportRecommendations}>
-                  <Text style={styles.reportRecommendationsTitle}>Recommendations:</Text>
-                  {report.recommendations.slice(0, 2).map((recommendation, rIndex) => (
-                    <Text key={rIndex} style={styles.reportRecommendationText}>
-                      • {recommendation}
+                {report.violations.length > 0 && (
+                  <View style={styles.reportViolations}>
+                    <Text style={styles.reportViolationsTitle}>
+                      Violations ({report.violations.length}):
                     </Text>
-                  ))}
-                </View>
-              )}
-            </View>
-          ))
+                    {report.violations.slice(0, 3).map((violation, vIndex) => (
+                      <Text key={vIndex} style={styles.reportViolationText}>
+                        • {violation.description}
+                      </Text>
+                    ))}
+                    {report.violations.length > 3 && (
+                      <Text style={styles.reportViolationText}>
+                        • ... and {report.violations.length - 3} more
+                      </Text>
+                    )}
+                  </View>
+                )}
+
+                {report.recommendations.length > 0 && (
+                  <View style={styles.reportRecommendations}>
+                    <Text style={styles.reportRecommendationsTitle}>
+                      Recommendations:
+                    </Text>
+                    {report.recommendations
+                      .slice(0, 2)
+                      .map((recommendation, rIndex) => (
+                        <Text
+                          key={rIndex}
+                          style={styles.reportRecommendationText}
+                        >
+                          • {recommendation}
+                        </Text>
+                      ))}
+                  </View>
+                )}
+              </View>
+            ))
         )}
       </View>
     );
@@ -351,33 +539,54 @@ export default function PerformanceScreen() {
     return (
       <View style={styles.optimizationContainer}>
         <Text style={styles.sectionTitle}>Optimization Strategies</Text>
-        
-        {strategies.map((strategy) => (
+
+        {strategies.map(strategy => (
           <View key={strategy.id} style={styles.strategyCard}>
             <View style={styles.strategyHeader}>
               <View style={styles.strategyInfo}>
                 <Text style={styles.strategyName}>{strategy.name}</Text>
-                <Text style={styles.strategyDescription}>{strategy.description}</Text>
+                <Text style={styles.strategyDescription}>
+                  {strategy.description}
+                </Text>
               </View>
-              <View style={[
-                styles.strategyPriority,
-                { backgroundColor: strategy.priority === 'critical' ? COLORS.ERROR : 
-                                 strategy.priority === 'high' ? COLORS.WARNING : 
-                                 strategy.priority === 'medium' ? COLORS.INFO : COLORS.SUCCESS }
-              ]}>
-                <Text style={styles.strategyPriorityText}>{strategy.priority}</Text>
+              <View
+                style={[
+                  styles.strategyPriority,
+                  {
+                    backgroundColor:
+                      strategy.priority === 'critical'
+                        ? themeColors.error
+                        : strategy.priority === 'high'
+                          ? themeColors.warning
+                          : strategy.priority === 'medium'
+                            ? themeColors.info
+                            : themeColors.success,
+                  },
+                ]}
+              >
+                <Text style={styles.strategyPriorityText}>
+                  {strategy.priority}
+                </Text>
               </View>
             </View>
 
             <View style={styles.strategyDetails}>
               <View style={styles.strategyDetail}>
-                <Ionicons name="trending-up" size={16} color={COLORS.TEXT_SECONDARY} />
+                <Ionicons
+                  name="trending-up"
+                  size={16}
+                  color={themeColors.textSecondary}
+                />
                 <Text style={styles.strategyDetailText}>
                   Estimated Impact: {strategy.estimatedImpact}%
                 </Text>
               </View>
               <View style={styles.strategyDetail}>
-                <Ionicons name="flag" size={16} color={COLORS.TEXT_SECONDARY} />
+                <Ionicons
+                  name="flag"
+                  size={16}
+                  color={themeColors.textSecondary}
+                />
                 <Text style={styles.strategyDetailText}>
                   Targets: {strategy.targetMetrics.join(', ')}
                 </Text>
@@ -388,7 +597,7 @@ export default function PerformanceScreen() {
               style={styles.strategyButton}
               onPress={() => handleOptimizationStrategy(strategy)}
             >
-              <Ionicons name="play" size={16} color={COLORS.PRIMARY} />
+              <Ionicons name="play" size={16} color={themeColors.primary} />
               <Text style={styles.strategyButtonText}>Apply Strategy</Text>
             </TouchableOpacity>
           </View>
@@ -415,7 +624,7 @@ export default function PerformanceScreen() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.PRIMARY} />
+        <ActivityIndicator size="large" color={themeColors.primary} />
         <Text style={styles.loadingText}>Loading performance data...</Text>
       </View>
     );
@@ -430,24 +639,30 @@ export default function PerformanceScreen() {
           { key: 'metrics', label: 'Metrics', icon: 'speedometer' },
           { key: 'reports', label: 'Reports', icon: 'document-text' },
           { key: 'optimization', label: 'Optimization', icon: 'settings' },
-        ].map((tab) => (
+        ].map(tab => (
           <TouchableOpacity
             key={tab.key}
             style={[
               styles.tabButton,
-              selectedTab === tab.key && styles.tabButtonSelected
+              selectedTab === tab.key && styles.tabButtonSelected,
             ]}
             onPress={() => setSelectedTab(tab.key as any)}
           >
-            <Ionicons 
-              name={tab.icon as any} 
-              size={20} 
-              color={selectedTab === tab.key ? COLORS.SURFACE : COLORS.TEXT_SECONDARY} 
+            <Ionicons
+              name={tab.icon as any}
+              size={20}
+              color={
+                selectedTab === tab.key
+                  ? themeColors.surface
+                  : themeColors.textSecondary
+              }
             />
-            <Text style={[
-              styles.tabButtonText,
-              selectedTab === tab.key && styles.tabButtonTextSelected
-            ]}>
+            <Text
+              style={[
+                styles.tabButtonText,
+                selectedTab === tab.key && styles.tabButtonTextSelected,
+              ]}
+            >
               {tab.label}
             </Text>
           </TouchableOpacity>
@@ -455,7 +670,7 @@ export default function PerformanceScreen() {
       </View>
 
       {/* Content */}
-      <ScrollView 
+      <ScrollView
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
@@ -469,24 +684,24 @@ export default function PerformanceScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: themeColors.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: themeColors.background,
   },
   loadingText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
     marginTop: SPACING.MD,
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.BORDER,
+    borderBottomColor: themeColors.border,
   },
   tabButton: {
     flex: 1,
@@ -498,15 +713,15 @@ const styles = StyleSheet.create({
     gap: SPACING.XS,
   },
   tabButtonSelected: {
-    backgroundColor: COLORS.PRIMARY,
+    backgroundColor: themeColors.primary,
   },
   tabButtonText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
   },
   tabButtonTextSelected: {
-    color: COLORS.SURFACE,
+    color: themeColors.surface,
   },
   content: {
     flex: 1,
@@ -518,11 +733,11 @@ const styles = StyleSheet.create({
     gap: SPACING.LG,
   },
   scoreCard: {
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     borderRadius: BORDER_RADIUS.MD,
     padding: SPACING.LG,
     alignItems: 'center',
-    shadowColor: COLORS.TEXT_PRIMARY,
+    shadowColor: themeColors.text_PRIMARY,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -531,7 +746,7 @@ const styles = StyleSheet.create({
   scoreTitle: {
     fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginBottom: SPACING.MD,
   },
   scoreContainer: {
@@ -545,12 +760,12 @@ const styles = StyleSheet.create({
   },
   scoreMax: {
     fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
     marginLeft: SPACING.XS,
   },
   scoreDescription: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
   metricsGrid: {
     flexDirection: 'row',
@@ -560,11 +775,11 @@ const styles = StyleSheet.create({
   },
   metricCard: {
     width: (width - SPACING.MD * 3) / 2,
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     borderRadius: BORDER_RADIUS.MD,
     padding: SPACING.MD,
     alignItems: 'center',
-    shadowColor: COLORS.TEXT_PRIMARY,
+    shadowColor: themeColors.text_PRIMARY,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -573,28 +788,28 @@ const styles = StyleSheet.create({
   metricValue: {
     fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginTop: SPACING.SM,
   },
   metricLabel: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
     marginTop: SPACING.XS,
   },
   metricStatus: {
     fontSize: TYPOGRAPHY.FONT_SIZES.XS,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
     marginTop: SPACING.XS,
   },
   summaryCard: {
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     borderRadius: BORDER_RADIUS.MD,
     padding: SPACING.MD,
   },
   summaryTitle: {
     fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginBottom: SPACING.MD,
   },
   summaryItem: {
@@ -605,7 +820,7 @@ const styles = StyleSheet.create({
   },
   summaryText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
   },
   actionButtons: {
     gap: SPACING.MD,
@@ -620,18 +835,18 @@ const styles = StyleSheet.create({
     gap: SPACING.SM,
   },
   testButton: {
-    backgroundColor: COLORS.PRIMARY,
+    backgroundColor: themeColors.primary,
   },
   actionButtonText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.SURFACE,
+    color: themeColors.surface,
   },
   metricsContainer: {
     gap: SPACING.MD,
   },
   metricItem: {
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     borderRadius: BORDER_RADIUS.MD,
     padding: SPACING.MD,
   },
@@ -652,11 +867,11 @@ const styles = StyleSheet.create({
   metricName: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
   },
   metricThreshold: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
   metricValueContainer: {
     alignItems: 'flex-end',
@@ -667,7 +882,7 @@ const styles = StyleSheet.create({
   },
   metricStatusText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
   reportsContainer: {
     gap: SPACING.MD,
@@ -679,18 +894,18 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginTop: SPACING.MD,
     marginBottom: SPACING.SM,
   },
   emptyStateText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
     textAlign: 'center',
     marginBottom: SPACING.LG,
   },
   emptyStateButton: {
-    backgroundColor: COLORS.PRIMARY,
+    backgroundColor: themeColors.primary,
     paddingHorizontal: SPACING.LG,
     paddingVertical: SPACING.MD,
     borderRadius: BORDER_RADIUS.MD,
@@ -698,13 +913,13 @@ const styles = StyleSheet.create({
   emptyStateButtonText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.SURFACE,
+    color: themeColors.surface,
   },
   reportCard: {
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     borderRadius: BORDER_RADIUS.MD,
     padding: SPACING.MD,
-    shadowColor: COLORS.TEXT_PRIMARY,
+    shadowColor: themeColors.text_PRIMARY,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -718,7 +933,7 @@ const styles = StyleSheet.create({
   },
   reportDate: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
   reportScore: {
     paddingHorizontal: SPACING.SM,
@@ -728,7 +943,7 @@ const styles = StyleSheet.create({
   reportScoreText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.SURFACE,
+    color: themeColors.surface,
   },
   reportMetrics: {
     marginBottom: SPACING.SM,
@@ -736,12 +951,12 @@ const styles = StyleSheet.create({
   reportMetricsTitle: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginBottom: SPACING.XS,
   },
   reportMetricsText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
   reportViolations: {
     marginBottom: SPACING.SM,
@@ -749,12 +964,12 @@ const styles = StyleSheet.create({
   reportViolationsTitle: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.ERROR,
+    color: themeColors.error,
     marginBottom: SPACING.XS,
   },
   reportViolationText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
   reportRecommendations: {
     marginBottom: SPACING.SM,
@@ -762,12 +977,12 @@ const styles = StyleSheet.create({
   reportRecommendationsTitle: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.INFO,
+    color: themeColors.info,
     marginBottom: SPACING.XS,
   },
   reportRecommendationText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
   optimizationContainer: {
     gap: SPACING.MD,
@@ -775,14 +990,14 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginBottom: SPACING.MD,
   },
   strategyCard: {
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     borderRadius: BORDER_RADIUS.MD,
     padding: SPACING.MD,
-    shadowColor: COLORS.TEXT_PRIMARY,
+    shadowColor: themeColors.text_PRIMARY,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -801,12 +1016,12 @@ const styles = StyleSheet.create({
   strategyName: {
     fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginBottom: SPACING.XS,
   },
   strategyDescription: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
   strategyPriority: {
     paddingHorizontal: SPACING.SM,
@@ -816,7 +1031,7 @@ const styles = StyleSheet.create({
   strategyPriorityText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.SURFACE,
+    color: themeColors.surface,
   },
   strategyDetails: {
     flexDirection: 'row',
@@ -830,7 +1045,7 @@ const styles = StyleSheet.create({
   },
   strategyDetailText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
   strategyButton: {
     flexDirection: 'row',
@@ -838,15 +1053,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: SPACING.SM,
     paddingHorizontal: SPACING.MD,
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: themeColors.background,
     borderRadius: BORDER_RADIUS.SM,
     borderWidth: 1,
-    borderColor: COLORS.PRIMARY,
+    borderColor: themeColors.primary,
     gap: SPACING.XS,
   },
   strategyButtonText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.PRIMARY,
+    color: themeColors.primary,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
   },
 });

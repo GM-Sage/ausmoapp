@@ -1,25 +1,28 @@
 // Home Screen - Main dashboard for Ausmo AAC App
 
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
   FlatList,
-  Image
+  Image,
+  Alert,
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 
 import { RootState } from '../store';
 import { Symbol } from '../types';
-import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../constants';
+import { TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../constants';
 import SymbolDataService from '../services/symbolDataService';
 import AudioService from '../services/audioService';
 import { ScreenSafeArea } from '../components/common/SafeAreaWrapper';
 import { useSafeArea } from '../hooks/useSafeArea';
+import { useVisualSettings } from '../contexts/VisualSettingsContext';
+import { getThemeColors } from '../utils/themeUtils';
 
 interface HomeScreenProps {
   navigation?: any;
@@ -27,6 +30,9 @@ interface HomeScreenProps {
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   const currentUser = useSelector((state: RootState) => state.user.currentUser);
+  const { theme } = useVisualSettings();
+  const safeTheme = theme || 'light'; // Ensure theme is never undefined
+  const themeColors = getThemeColors(safeTheme);
   const [popularSymbols, setPopularSymbols] = useState<Symbol[]>([]);
   const [recentSymbols, setRecentSymbols] = useState<Symbol[]>([]);
   const [playingSymbolId, setPlayingSymbolId] = useState<string | null>(null);
@@ -41,7 +47,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       // Get popular symbols for quick access
       const popular = SymbolDataService.getPopularSymbols();
       setPopularSymbols(popular.slice(0, 12)); // Show first 12 popular symbols
-      
+
       // For now, use some popular symbols as "recent"
       setRecentSymbols(popular.slice(12, 20));
     } catch (error) {
@@ -74,7 +80,11 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       <TouchableOpacity
         style={[
           styles.symbolItem,
-          isPlaying && styles.symbolItemPlaying
+          {
+            backgroundColor: themeColors.surface,
+            borderColor: themeColors.border,
+          },
+          isPlaying && styles.symbolItemPlaying,
         ]}
         onPress={() => handleSymbolPress(item)}
         disabled={isPlaying}
@@ -86,127 +96,218 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           <Text style={styles.symbolEmoji}>{item.image}</Text>
           {isPlaying && (
             <View style={styles.playingOverlay}>
-              <Ionicons name="volume-high" size={20} color={COLORS.PRIMARY} />
+              <Ionicons
+                name="volume-high"
+                size={20}
+                color={themeColors.primary}
+              />
             </View>
           )}
         </View>
-        <Text style={styles.symbolName} numberOfLines={1}>
+        <Text
+          style={[styles.symbolName, { color: themeColors.text }]}
+          numberOfLines={1}
+        >
           {item.name}
         </Text>
       </TouchableOpacity>
     );
   };
 
+  const handleQuickAction = (action: string) => {
+    try {
+      // Navigate based on action
+      switch (action) {
+        case 'Talk':
+          navigation.navigate('Communication');
+          break;
+        case 'Books':
+          navigation.navigate('Library');
+          break;
+        case 'Settings':
+          navigation.navigate('Settings');
+          break;
+        case 'Learn':
+          navigation.navigate('Education');
+          break;
+        case 'Music':
+          // For now, show an alert - can be expanded later
+          Alert.alert('Music', 'Music feature coming soon!');
+          break;
+        default:
+          console.log('Unknown quick action:', action);
+      }
+    } catch (error) {
+      console.error('Error handling quick action:', error);
+    }
+  };
+
   const renderQuickActions = () => (
     <View style={styles.quickActions}>
-      <TouchableOpacity 
-        style={styles.quickActionButton}
-        onPress={() => navigation.navigate('Communication')}
+      <TouchableOpacity
+        style={[
+          styles.quickActionButton,
+          { backgroundColor: themeColors.primary },
+        ]}
+        onPress={() => handleQuickAction('Talk')}
         accessible={true}
         accessibilityLabel="Open communication"
         accessibilityRole="button"
       >
-        <Ionicons name="chatbubbles" size={32} color={COLORS.SURFACE} />
-        <Text style={styles.quickActionText}>Talk</Text>
+        <Ionicons name="chatbubbles" size={32} color={themeColors.text} />
+        <Text style={[styles.quickActionText, { color: themeColors.text }]}>
+          Talk
+        </Text>
       </TouchableOpacity>
-      
-      <TouchableOpacity 
-        style={styles.quickActionButton}
-        onPress={() => navigation.navigate('Library')}
+
+      <TouchableOpacity
+        style={[
+          styles.quickActionButton,
+          { backgroundColor: themeColors.secondary },
+        ]}
+        onPress={() => handleQuickAction('Books')}
         accessible={true}
         accessibilityLabel="Open library"
         accessibilityRole="button"
       >
-        <Ionicons name="library" size={32} color={COLORS.SURFACE} />
-        <Text style={styles.quickActionText}>Books</Text>
+        <Ionicons name="library" size={32} color={themeColors.text} />
+        <Text style={[styles.quickActionText, { color: themeColors.text }]}>
+          Books
+        </Text>
       </TouchableOpacity>
-      
-      <TouchableOpacity 
-        style={styles.quickActionButton}
-        onPress={() => navigation.navigate('Settings')}
+
+      <TouchableOpacity
+        style={[
+          styles.quickActionButton,
+          { backgroundColor: themeColors.success },
+        ]}
+        onPress={() => handleQuickAction('Learn')}
+        accessible={true}
+        accessibilityLabel="Open education"
+        accessibilityRole="button"
+      >
+        <Ionicons name="school" size={32} color={themeColors.text} />
+        <Text style={[styles.quickActionText, { color: themeColors.text }]}>
+          Learn
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[
+          styles.quickActionButton,
+          { backgroundColor: themeColors.warning },
+        ]}
+        onPress={() => handleQuickAction('Settings')}
         accessible={true}
         accessibilityLabel="Open settings"
         accessibilityRole="button"
       >
-        <Ionicons name="settings" size={32} color={COLORS.SURFACE} />
-        <Text style={styles.quickActionText}>Settings</Text>
+        <Ionicons name="settings" size={32} color={themeColors.text} />
+        <Text style={[styles.quickActionText, { color: themeColors.text }]}>
+          Settings
+        </Text>
       </TouchableOpacity>
     </View>
   );
 
   return (
-    <ScreenSafeArea style={styles.container}>
+    <ScreenSafeArea
+      style={[styles.container, { backgroundColor: themeColors.background }]}
+    >
       <ScrollView showsVerticalScrollIndicator={false}>
-      {/* Welcome Header */}
-      <View style={styles.header}>
-        <View style={styles.welcomeSection}>
-          <Text style={styles.welcomeText}>
-            Welcome{currentUser ? `, ${currentUser.name}` : ''}!
-          </Text>
-          <Text style={styles.subtitleText}>
-            Tap any symbol to hear it spoken
-          </Text>
+        {/* Welcome Header */}
+        <View style={[styles.header, { backgroundColor: themeColors.primary }]}>
+          <View style={styles.welcomeSection}>
+            <Text style={[styles.welcomeText, { color: themeColors.text }]}>
+              Welcome{currentUser ? `, ${currentUser.name}` : ''}!
+            </Text>
+            <Text
+              style={[
+                styles.subtitleText,
+                { color: themeColors.textSecondary },
+              ]}
+            >
+              Tap any symbol to hear it spoken
+            </Text>
+          </View>
         </View>
-      </View>
 
-      {/* Quick Actions */}
-      {renderQuickActions()}
+        {/* Quick Actions */}
+        {renderQuickActions()}
 
-      {/* Popular Symbols */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Popular Symbols</Text>
-          <TouchableOpacity 
-            onPress={() => navigation.navigate('Library', { screen: 'SymbolLibrary' })}
-            style={styles.viewAllButton}
-          >
-            <Text style={styles.viewAllText}>View All</Text>
-            <Ionicons name="chevron-forward" size={16} color={COLORS.PRIMARY} />
-          </TouchableOpacity>
-        </View>
-        
-        <FlatList
-          data={popularSymbols}
-          renderItem={renderSymbolItem}
-          keyExtractor={(item) => item.id}
-          numColumns={4}
-          scrollEnabled={false}
-          contentContainerStyle={styles.symbolsGrid}
-        />
-      </View>
+        {/* Popular Symbols */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: themeColors.text }]}>
+              Popular Symbols
+            </Text>
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate('Library', { screen: 'SymbolLibrary' })
+              }
+              style={styles.viewAllButton}
+            >
+              <Text
+                style={[styles.viewAllText, { color: themeColors.primary }]}
+              >
+                View All
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={themeColors.primary}
+              />
+            </TouchableOpacity>
+          </View>
 
-      {/* Recent Symbols */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>More Symbols</Text>
+          <FlatList
+            data={popularSymbols}
+            renderItem={renderSymbolItem}
+            keyExtractor={item => item.id}
+            numColumns={4}
+            scrollEnabled={false}
+            contentContainerStyle={styles.symbolsGrid}
+          />
         </View>
-        
-        <FlatList
-          data={recentSymbols}
-          renderItem={renderSymbolItem}
-          keyExtractor={(item) => item.id}
-          numColumns={4}
-          scrollEnabled={false}
-          contentContainerStyle={styles.symbolsGrid}
-        />
-      </View>
 
-      {/* Tips Section */}
-      <View style={styles.tipsSection}>
-        <View style={styles.tipCard}>
-          <Ionicons name="bulb" size={24} color={COLORS.PRIMARY} />
-          <Text style={styles.tipText}>
-            Tip: Use the Books tab to create custom communication pages
-          </Text>
+        {/* Recent Symbols */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: themeColors.text }]}>
+              More Symbols
+            </Text>
+          </View>
+
+          <FlatList
+            data={recentSymbols}
+            renderItem={renderSymbolItem}
+            keyExtractor={item => item.id}
+            numColumns={4}
+            scrollEnabled={false}
+            contentContainerStyle={styles.symbolsGrid}
+          />
         </View>
-        
-        <View style={styles.tipCard}>
-          <Ionicons name="volume-high" size={24} color={COLORS.PRIMARY} />
-          <Text style={styles.tipText}>
-            Tip: Adjust voice settings in Settings → Audio Settings
-          </Text>
+
+        {/* Tips Section */}
+        <View style={styles.tipsSection}>
+          <View style={styles.tipCard}>
+            <Ionicons name="bulb" size={24} color={themeColors.primary} />
+            <Text style={styles.tipText}>
+              Tip: Use the Books tab to create custom communication pages
+            </Text>
+          </View>
+
+          <View style={styles.tipCard}>
+            <Ionicons
+              name="volume-high"
+              size={24}
+              color={themeColors.primary}
+            />
+            <Text style={styles.tipText}>
+              Tip: Adjust voice settings in Settings → Audio Settings
+            </Text>
+          </View>
         </View>
-      </View>
       </ScrollView>
     </ScreenSafeArea>
   );
@@ -215,10 +316,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
   },
   header: {
-    backgroundColor: COLORS.PRIMARY,
     paddingHorizontal: SPACING.LG,
     paddingVertical: SPACING.XL,
     paddingTop: 60, // Account for status bar
@@ -229,12 +328,10 @@ const styles = StyleSheet.create({
   welcomeText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.TITLE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.SURFACE,
     marginBottom: SPACING.SM,
   },
   subtitleText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.SURFACE,
     opacity: 0.9,
     textAlign: 'center',
   },
@@ -243,11 +340,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     paddingHorizontal: SPACING.LG,
     paddingVertical: SPACING.XL,
-    backgroundColor: COLORS.SURFACE,
     marginHorizontal: SPACING.MD,
     marginTop: -SPACING.LG,
     borderRadius: BORDER_RADIUS.LARGE,
-    shadowColor: COLORS.TEXT_PRIMARY,
     shadowOffset: {
       width: 0,
       height: 2,
@@ -263,7 +358,6 @@ const styles = StyleSheet.create({
   quickActionText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
     marginTop: SPACING.XS,
   },
   section: {
@@ -279,7 +373,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
   },
   viewAllButton: {
     flexDirection: 'row',
@@ -288,7 +381,6 @@ const styles = StyleSheet.create({
   },
   viewAllText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.PRIMARY,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
   },
   symbolsGrid: {
@@ -299,9 +391,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: SPACING.SM,
     margin: SPACING.XS,
-    backgroundColor: COLORS.SURFACE,
     borderRadius: BORDER_RADIUS.MEDIUM,
-    shadowColor: COLORS.TEXT_PRIMARY,
     shadowOffset: {
       width: 0,
       height: 1,
@@ -311,8 +401,6 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   symbolItemPlaying: {
-    backgroundColor: '#E3F2FD',
-    borderColor: COLORS.PRIMARY,
     borderWidth: 2,
     opacity: 0.8,
   },
@@ -327,10 +415,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -5,
     right: -5,
-    backgroundColor: COLORS.SURFACE,
     borderRadius: 10,
     padding: 2,
-    shadowColor: COLORS.TEXT_PRIMARY,
     shadowOffset: {
       width: 0,
       height: 1,
@@ -342,7 +428,6 @@ const styles = StyleSheet.create({
   symbolName: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
     textAlign: 'center',
   },
   tipsSection: {
@@ -352,11 +437,9 @@ const styles = StyleSheet.create({
   tipCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.SURFACE,
     padding: SPACING.MD,
     marginBottom: SPACING.SM,
     borderRadius: BORDER_RADIUS.MEDIUM,
-    shadowColor: COLORS.TEXT_PRIMARY,
     shadowOffset: {
       width: 0,
       height: 1,
@@ -368,7 +451,6 @@ const styles = StyleSheet.create({
   tipText: {
     flex: 1,
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
     marginLeft: SPACING.SM,
     lineHeight: TYPOGRAPHY.LINE_HEIGHTS.NORMAL * TYPOGRAPHY.FONT_SIZES.MEDIUM,
   },

@@ -82,7 +82,9 @@ export const KeyboardAwareWrapper: React.FC<KeyboardAwareWrapperProps> = ({
 };
 
 // Specialized wrapper for keyboard page
-export const KeyboardPageWrapper: React.FC<Omit<KeyboardAwareWrapperProps, 'behavior' | 'keyboardVerticalOffset'>> = (props) => (
+export const KeyboardPageWrapper: React.FC<
+  Omit<KeyboardAwareWrapperProps, 'behavior' | 'keyboardVerticalOffset'>
+> = props => (
   <KeyboardAwareWrapper
     {...props}
     behavior="padding"
@@ -93,7 +95,9 @@ export const KeyboardPageWrapper: React.FC<Omit<KeyboardAwareWrapperProps, 'beha
 );
 
 // Specialized wrapper for input forms
-export const FormWrapper: React.FC<Omit<KeyboardAwareWrapperProps, 'behavior' | 'keyboardVerticalOffset'>> = (props) => (
+export const FormWrapper: React.FC<
+  Omit<KeyboardAwareWrapperProps, 'behavior' | 'keyboardVerticalOffset'>
+> = props => (
   <KeyboardAwareWrapper
     {...props}
     behavior="padding"
@@ -104,7 +108,9 @@ export const FormWrapper: React.FC<Omit<KeyboardAwareWrapperProps, 'behavior' | 
 );
 
 // Specialized wrapper for chat/messaging
-export const ChatWrapper: React.FC<Omit<KeyboardAwareWrapperProps, 'behavior' | 'keyboardVerticalOffset'>> = (props) => (
+export const ChatWrapper: React.FC<
+  Omit<KeyboardAwareWrapperProps, 'behavior' | 'keyboardVerticalOffset'>
+> = props => (
   <KeyboardAwareWrapper
     {...props}
     behavior="padding"

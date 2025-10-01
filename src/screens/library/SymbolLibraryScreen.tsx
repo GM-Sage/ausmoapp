@@ -1,22 +1,25 @@
 // Symbol Library Screen
 
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  FlatList, 
-  TouchableOpacity, 
+import { getThemeColors } from '../../utils/themeUtils';
+import { useVisualSettings } from '../../contexts/VisualSettingsContext';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
   Alert,
   TextInput,
-  Image
+  Image,
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 
 import { RootState } from '../../store';
 import { Symbol } from '../../types';
-import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../../constants';
+import { TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../../constants';
 import DatabaseService from '../../services/databaseService';
 import SymbolDataService from '../../services/symbolDataService';
 import AudioService from '../../services/audioService';
@@ -30,7 +33,13 @@ interface SymbolLibraryScreenProps {
   navigation?: any;
 }
 
-export default function SymbolLibraryScreen({ route, navigation }: SymbolLibraryScreenProps) {
+export default function SymbolLibraryScreen({
+  route,
+  navigation,
+}: SymbolLibraryScreenProps) {
+  const { theme } = useVisualSettings();
+  const safeTheme = theme || 'light'; // Ensure theme is never undefined
+  const themeColors = getThemeColors(safeTheme);
   const currentUser = useSelector((state: RootState) => state.user.currentUser);
   const [symbols, setSymbols] = useState<Symbol[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,6 +50,13 @@ export default function SymbolLibraryScreen({ route, navigation }: SymbolLibrary
   useEffect(() => {
     loadSymbols();
   }, []);
+
+  // Reload symbols when screen comes into focus (e.g., returning from AddCustomSymbol)
+  useFocusEffect(
+    React.useCallback(() => {
+      loadSymbols();
+    }, [])
+  );
 
   const loadSymbols = async () => {
     try {
@@ -65,9 +81,12 @@ export default function SymbolLibraryScreen({ route, navigation }: SymbolLibrary
       } catch (error) {
         console.error('Error searching symbols:', error);
         // Fallback to local filtering
-        const filtered = symbols.filter(symbol =>
-          symbol.name.toLowerCase().includes(term.toLowerCase()) ||
-          symbol.keywords.some(keyword => keyword.toLowerCase().includes(term.toLowerCase()))
+        const filtered = symbols.filter(
+          symbol =>
+            symbol.name.toLowerCase().includes(term.toLowerCase()) ||
+            symbol.keywords.some(keyword =>
+              keyword.toLowerCase().includes(term.toLowerCase())
+            )
         );
         setSymbols(filtered);
       }
@@ -82,7 +101,8 @@ export default function SymbolLibraryScreen({ route, navigation }: SymbolLibrary
       loadSymbols();
     } else {
       try {
-        const filteredSymbols = SymbolDataService.getSymbolsByCategory(category);
+        const filteredSymbols =
+          SymbolDataService.getSymbolsByCategory(category);
         setSymbols(filteredSymbols);
       } catch (error) {
         console.error('Error filtering symbols:', error);
@@ -95,14 +115,15 @@ export default function SymbolLibraryScreen({ route, navigation }: SymbolLibrary
 
   const handleSymbolPress = async (symbol: Symbol) => {
     const onSymbolSelect = route?.params?.onSymbolSelect;
-    
+
     try {
       // Set playing state for visual feedback
       setPlayingSymbolId(symbol.id);
-      
+
       // Always play audio when symbol is pressed (best practice for AAC apps)
-      console.log('Playing audio for symbol:', symbol.name);
-      await AudioService.speak(symbol.name, {
+      const textToSpeak = symbol.ttsText || symbol.name;
+      console.log('Playing audio for symbol:', textToSpeak);
+      await AudioService.speak(textToSpeak, {
         ttsVoice: undefined, // Use undefined for better compatibility
         ttsSpeed: 1.0,
         ttsPitch: 1.0,
@@ -116,7 +137,7 @@ export default function SymbolLibraryScreen({ route, navigation }: SymbolLibrary
       // Clear playing state
       setPlayingSymbolId(null);
     }
-    
+
     if (onSymbolSelect) {
       // If we're in selection mode, call the callback and go back
       onSymbolSelect(symbol);
@@ -128,27 +149,66 @@ export default function SymbolLibraryScreen({ route, navigation }: SymbolLibrary
         `Category: ${symbol.category}\nKeywords: ${symbol.keywords.join(', ')}`,
         [
           { text: 'Cancel', style: 'cancel' },
-          { text: 'Use Symbol', onPress: () => console.log('Using symbol:', symbol.name) },
+          {
+            text: 'Use Symbol',
+            onPress: () => console.log('Using symbol:', symbol.name),
+          },
         ]
       );
     }
   };
 
   const handleAddSymbol = () => {
-    Alert.alert('Add Symbol', 'Custom symbol creation coming soon');
+    navigation.navigate('AddCustomSymbol');
+  };
+
+  const handleDeleteSymbol = async (symbol: Symbol) => {
+    if (symbol.isBuiltIn) {
+      Alert.alert('Cannot Delete', 'Built-in symbols cannot be deleted');
+      return;
+    }
+
+    Alert.alert(
+      'Delete Symbol',
+      `Are you sure you want to delete "${symbol.name}"? This action cannot be undone.`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // Remove from SymbolDataService
+              SymbolDataService.removeCustomSymbol(symbol.id);
+
+              // Remove from database
+              await DatabaseService.deleteSymbol(symbol.id);
+
+              // Reload symbols
+              await loadSymbols();
+
+              Alert.alert('Success', 'Symbol deleted successfully');
+            } catch (error) {
+              console.error('Error deleting symbol:', error);
+              Alert.alert('Error', 'Failed to delete symbol');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const categories = ['All', ...SymbolDataService.getCategories()];
 
   const renderSymbol = ({ item }: { item: Symbol }) => {
     const isPlaying = playingSymbolId === item.id;
-    
+
     return (
       <TouchableOpacity
-        style={[
-          styles.symbolItem,
-          isPlaying && styles.symbolItemPlaying
-        ]}
+        style={[styles.symbolItem, isPlaying && styles.symbolItemPlaying]}
         onPress={() => handleSymbolPress(item)}
         disabled={isPlaying}
       >
@@ -160,7 +220,11 @@ export default function SymbolLibraryScreen({ route, navigation }: SymbolLibrary
           />
           {isPlaying && (
             <View style={styles.playingOverlay}>
-              <Ionicons name="volume-high" size={24} color={COLORS.PRIMARY} />
+              <Ionicons
+                name="volume-high"
+                size={24}
+                color={themeColors.primary}
+              />
             </View>
           )}
         </View>
@@ -173,9 +237,14 @@ export default function SymbolLibraryScreen({ route, navigation }: SymbolLibrary
           </Text>
         </View>
         <View style={styles.symbolActions}>
-          <TouchableOpacity style={styles.actionButton}>
-            <Ionicons name="add-circle" size={20} color={COLORS.PRIMARY} />
-          </TouchableOpacity>
+          {!item.isBuiltIn && (
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => handleDeleteSymbol(item)}
+            >
+              <Ionicons name="trash" size={20} color={themeColors.error} />
+            </TouchableOpacity>
+          )}
         </View>
       </TouchableOpacity>
     );
@@ -189,19 +258,21 @@ export default function SymbolLibraryScreen({ route, navigation }: SymbolLibrary
           <TouchableOpacity
             style={[
               styles.categoryButton,
-              selectedCategory === item && styles.categoryButtonActive
+              selectedCategory === item && styles.categoryButtonActive,
             ]}
             onPress={() => handleCategoryFilter(item)}
           >
-            <Text style={[
-              styles.categoryButtonText,
-              selectedCategory === item && styles.categoryButtonTextActive
-            ]}>
+            <Text
+              style={[
+                styles.categoryButtonText,
+                selectedCategory === item && styles.categoryButtonTextActive,
+              ]}
+            >
               {item}
             </Text>
           </TouchableOpacity>
         )}
-        keyExtractor={(item) => item}
+        keyExtractor={item => item}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.categoryList}
@@ -223,27 +294,32 @@ export default function SymbolLibraryScreen({ route, navigation }: SymbolLibrary
         <Text style={styles.title}>
           {route?.params?.onSymbolSelect ? 'Select Symbol' : 'Symbol Library'}
         </Text>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={handleAddSymbol}
-        >
-          <Ionicons name="add" size={24} color={COLORS.SURFACE} />
+        <TouchableOpacity style={styles.addButton} onPress={handleAddSymbol}>
+          <Ionicons name="add" size={24} color={themeColors.surface} />
         </TouchableOpacity>
       </View>
 
       <View style={styles.searchContainer}>
         <View style={styles.searchInputContainer}>
-          <Ionicons name="search" size={20} color={COLORS.TEXT_SECONDARY} />
+          <Ionicons
+            name="search"
+            size={20}
+            color={themeColors.textSecondary}
+          />
           <TextInput
             style={styles.searchInput}
             value={searchTerm}
             onChangeText={handleSearch}
             placeholder="Search symbols..."
-            placeholderTextColor={COLORS.TEXT_SECONDARY}
+            placeholderTextColor={themeColors.textSecondary}
           />
           {searchTerm.length > 0 && (
             <TouchableOpacity onPress={() => handleSearch('')}>
-              <Ionicons name="close-circle" size={20} color={COLORS.TEXT_SECONDARY} />
+              <Ionicons
+                name="close-circle"
+                size={20}
+                color={themeColors.textSecondary}
+              />
             </TouchableOpacity>
           )}
         </View>
@@ -254,16 +330,22 @@ export default function SymbolLibraryScreen({ route, navigation }: SymbolLibrary
       <FlatList
         data={symbols}
         renderItem={renderSymbol}
-        keyExtractor={(item) => item.id}
+        keyExtractor={item => item.id}
         numColumns={2}
         contentContainerStyle={styles.symbolsList}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
-            <Ionicons name="images-outline" size={64} color={COLORS.TEXT_SECONDARY} />
+            <Ionicons
+              name="images-outline"
+              size={64}
+              color={themeColors.textSecondary}
+            />
             <Text style={styles.emptyTitle}>No symbols found</Text>
             <Text style={styles.emptySubtitle}>
-              {searchTerm ? 'Try a different search term' : 'No symbols available'}
+              {searchTerm
+                ? 'Try a different search term'
+                : 'No symbols available'}
             </Text>
           </View>
         )}
@@ -275,23 +357,23 @@ export default function SymbolLibraryScreen({ route, navigation }: SymbolLibrary
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: themeColors.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: themeColors.background,
   },
   loadingText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: COLORS.PRIMARY,
+    backgroundColor: themeColors.primary,
     paddingHorizontal: SPACING.MD,
     paddingVertical: SPACING.SM,
     paddingTop: 50,
@@ -299,7 +381,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: TYPOGRAPHY.FONT_SIZES.TITLE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.SURFACE,
+    color: themeColors.surface,
     flex: 1,
   },
   addButton: {
@@ -312,9 +394,9 @@ const styles = StyleSheet.create({
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     borderWidth: 1,
-    borderColor: COLORS.BORDER,
+    borderColor: themeColors.border,
     borderRadius: BORDER_RADIUS.MEDIUM,
     paddingHorizontal: SPACING.MD,
     paddingVertical: SPACING.SM,
@@ -322,7 +404,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginLeft: SPACING.SM,
   },
   categoryFilter: {
@@ -335,22 +417,22 @@ const styles = StyleSheet.create({
   categoryButton: {
     paddingHorizontal: SPACING.MD,
     paddingVertical: SPACING.SM,
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     borderWidth: 1,
-    borderColor: COLORS.BORDER,
+    borderColor: themeColors.border,
     borderRadius: BORDER_RADIUS.MEDIUM,
     marginRight: SPACING.SM,
   },
   categoryButtonActive: {
-    backgroundColor: COLORS.PRIMARY,
-    borderColor: COLORS.PRIMARY,
+    backgroundColor: themeColors.primary,
+    borderColor: themeColors.primary,
   },
   categoryButtonText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
   },
   categoryButtonTextActive: {
-    color: COLORS.SURFACE,
+    color: themeColors.surface,
   },
   symbolsList: {
     paddingHorizontal: SPACING.LG,
@@ -358,18 +440,18 @@ const styles = StyleSheet.create({
   },
   symbolItem: {
     flex: 1,
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     marginHorizontal: SPACING.XS,
     marginBottom: SPACING.MD,
     borderRadius: BORDER_RADIUS.MEDIUM,
     borderWidth: 1,
-    borderColor: COLORS.BORDER,
+    borderColor: themeColors.border,
     padding: SPACING.MD,
     alignItems: 'center',
   },
   symbolItemPlaying: {
     backgroundColor: '#E3F2FD', // Light blue background
-    borderColor: COLORS.PRIMARY,
+    borderColor: themeColors.primary,
     borderWidth: 2,
     opacity: 0.8,
   },
@@ -401,17 +483,17 @@ const styles = StyleSheet.create({
   symbolName: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     textAlign: 'center',
   },
   symbolCategory: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
     textAlign: 'center',
   },
   symbolKeywords: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
     textAlign: 'center',
     fontStyle: 'italic',
   },
@@ -430,13 +512,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginTop: SPACING.MD,
     marginBottom: SPACING.SM,
   },
   emptySubtitle: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
     textAlign: 'center',
   },
 });

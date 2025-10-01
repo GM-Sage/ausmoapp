@@ -1,0 +1,28 @@
+🎉 New in Ausmo AAC App!
+
+✅ Enhanced Communication Features
+- Improved symbol selection and message building
+- Better express page functionality
+- Enhanced voice output with multiple languages
+
+♿ Accessibility Improvements
+- Switch scanning optimizations
+- Voice control enhancements
+- Visual accessibility improvements for autism
+
+🔧 Performance & Stability
+- Faster app launch and navigation
+- Better memory management
+- Enhanced offline functionality
+
+📚 Educational Features
+- New learning activities and assessments
+- Progress tracking improvements
+- Enhanced vocabulary building tools
+
+🐛 Bug Fixes & Improvements
+- Various stability and performance improvements
+- UI enhancements and bug fixes
+- Better error handling and user feedback
+
+Thank you for using Ausmo AAC App! Your feedback helps us improve the app for the autism community.

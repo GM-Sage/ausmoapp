@@ -40,13 +40,19 @@ const uiSlice = createSlice({
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
     },
-    clearError: (state) => {
+    clearError: state => {
       state.error = null;
     },
-    setTheme: (state, action: PayloadAction<'light' | 'dark' | 'high-contrast'>) => {
+    setTheme: (
+      state,
+      action: PayloadAction<'light' | 'dark' | 'high-contrast'>
+    ) => {
       state.theme = action.payload;
     },
-    setOrientation: (state, action: PayloadAction<'portrait' | 'landscape'>) => {
+    setOrientation: (
+      state,
+      action: PayloadAction<'portrait' | 'landscape'>
+    ) => {
       state.orientation = action.payload;
     },
     setKeyboardVisible: (state, action: PayloadAction<boolean>) => {
@@ -56,25 +62,31 @@ const uiSlice = createSlice({
       state.modalVisible = true;
       state.modalType = action.payload;
     },
-    hideModal: (state) => {
+    hideModal: state => {
       state.modalVisible = false;
       state.modalType = null;
     },
-    showToast: (state, action: PayloadAction<{ message: string; type?: 'success' | 'error' | 'warning' | 'info' }>) => {
+    showToast: (
+      state,
+      action: PayloadAction<{
+        message: string;
+        type?: 'success' | 'error' | 'warning' | 'info';
+      }>
+    ) => {
       state.toastMessage = action.payload.message;
       state.toastType = action.payload.type || 'info';
     },
-    hideToast: (state) => {
+    hideToast: state => {
       state.toastMessage = null;
     },
     setTutorialStep: (state, action: PayloadAction<number>) => {
       state.tutorialStep = action.payload;
     },
-    completeTutorial: (state) => {
+    completeTutorial: state => {
       state.tutorialCompleted = true;
       state.tutorialStep = 0;
     },
-    resetTutorial: (state) => {
+    resetTutorial: state => {
       state.tutorialCompleted = false;
       state.tutorialStep = 0;
     },

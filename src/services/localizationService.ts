@@ -298,7 +298,7 @@ class LocalizationService {
         },
         category: 'navigation',
       },
-      
+
       // Communication
       {
         key: 'comm.hello',
@@ -408,7 +408,7 @@ class LocalizationService {
         },
         category: 'communication',
       },
-      
+
       // Food & Drink
       {
         key: 'food.water',
@@ -464,7 +464,7 @@ class LocalizationService {
         },
         category: 'food',
       },
-      
+
       // Actions
       {
         key: 'action.eat',
@@ -520,7 +520,7 @@ class LocalizationService {
         },
         category: 'action',
       },
-      
+
       // Settings
       {
         key: 'settings.language',
@@ -568,7 +568,20 @@ class LocalizationService {
         name: 'Hello',
         category: 'greeting',
         culturalContext: 'Universal greeting',
-        languages: ['en', 'es', 'fr', 'de', 'it', 'pt', 'zh', 'ja', 'ko', 'ar', 'hi', 'ru'],
+        languages: [
+          'en',
+          'es',
+          'fr',
+          'de',
+          'it',
+          'pt',
+          'zh',
+          'ja',
+          'ko',
+          'ar',
+          'hi',
+          'ru',
+        ],
         symbols: {
           western: '👋',
           eastern: '🙏',
@@ -583,7 +596,20 @@ class LocalizationService {
         name: 'Rice',
         category: 'food',
         culturalContext: 'Staple food in many cultures',
-        languages: ['en', 'es', 'fr', 'de', 'it', 'pt', 'zh', 'ja', 'ko', 'ar', 'hi', 'ru'],
+        languages: [
+          'en',
+          'es',
+          'fr',
+          'de',
+          'it',
+          'pt',
+          'zh',
+          'ja',
+          'ko',
+          'ar',
+          'hi',
+          'ru',
+        ],
         symbols: {
           western: '🍚',
           eastern: '🍚',
@@ -598,7 +624,20 @@ class LocalizationService {
         name: 'Mother',
         category: 'family',
         culturalContext: 'Universal family relationship',
-        languages: ['en', 'es', 'fr', 'de', 'it', 'pt', 'zh', 'ja', 'ko', 'ar', 'hi', 'ru'],
+        languages: [
+          'en',
+          'es',
+          'fr',
+          'de',
+          'it',
+          'pt',
+          'zh',
+          'ja',
+          'ko',
+          'ar',
+          'hi',
+          'ru',
+        ],
         symbols: {
           western: '👩',
           eastern: '👩',
@@ -613,7 +652,20 @@ class LocalizationService {
         name: 'Happy',
         category: 'emotion',
         culturalContext: 'Universal positive emotion',
-        languages: ['en', 'es', 'fr', 'de', 'it', 'pt', 'zh', 'ja', 'ko', 'ar', 'hi', 'ru'],
+        languages: [
+          'en',
+          'es',
+          'fr',
+          'de',
+          'it',
+          'pt',
+          'zh',
+          'ja',
+          'ko',
+          'ar',
+          'hi',
+          'ru',
+        ],
         symbols: {
           western: '😊',
           eastern: '😊',
@@ -628,7 +680,20 @@ class LocalizationService {
         name: 'Morning',
         category: 'time',
         culturalContext: 'Time of day',
-        languages: ['en', 'es', 'fr', 'de', 'it', 'pt', 'zh', 'ja', 'ko', 'ar', 'hi', 'ru'],
+        languages: [
+          'en',
+          'es',
+          'fr',
+          'de',
+          'it',
+          'pt',
+          'zh',
+          'ja',
+          'ko',
+          'ar',
+          'hi',
+          'ru',
+        ],
         symbols: {
           western: '🌅',
           eastern: '🌅',
@@ -646,23 +711,25 @@ class LocalizationService {
     try {
       // Get device language
       const deviceLanguage = await this.getDeviceLanguage();
-      
+
       // Check if user has a preferred language
       const userLanguage = await this.getUserPreferredLanguage();
-      
+
       // Use user preference if available, otherwise use device language
       const detectedLanguage = userLanguage || deviceLanguage;
-      
+
       // Check if language is supported
-      const isSupported = this.supportedLanguages.some(lang => lang.code === detectedLanguage);
-      
+      const isSupported = this.supportedLanguages.some(
+        lang => lang.code === detectedLanguage
+      );
+
       if (isSupported) {
         this.currentLanguage = detectedLanguage;
       } else {
         // Use fallback language
         this.currentLanguage = this.fallbackLanguage;
       }
-      
+
       console.log('Detected language:', this.currentLanguage);
       return this.currentLanguage;
     } catch (error) {
@@ -685,8 +752,10 @@ class LocalizationService {
   private async getUserPreferredLanguage(): Promise<string | null> {
     try {
       if (!this.currentUser) return null;
-      
-      const userLanguage = await AsyncStorage.getItem(`user_language_${this.currentUser.id}`);
+
+      const userLanguage = await AsyncStorage.getItem(
+        `user_language_${this.currentUser.id}`
+      );
       return userLanguage;
     } catch (error) {
       console.error('Error getting user preferred language:', error);
@@ -698,32 +767,35 @@ class LocalizationService {
   getString(key: string, language?: string): string {
     try {
       const targetLanguage = language || this.currentLanguage;
-      
+
       // Find the localized string
-      const localizedString = this.localizedStrings.find(str => str.key === key);
+      const localizedString = this.localizedStrings.find(
+        str => str.key === key
+      );
       if (!localizedString) {
         console.warn(`Localized string not found for key: ${key}`);
         return key; // Return key if translation not found
       }
-      
+
       // Get translation for target language
       const translation = localizedString.translations[targetLanguage];
       if (translation) {
         return translation;
       }
-      
+
       // Fallback to fallback language
-      const fallbackTranslation = localizedString.translations[this.fallbackLanguage];
+      const fallbackTranslation =
+        localizedString.translations[this.fallbackLanguage];
       if (fallbackTranslation) {
         return fallbackTranslation;
       }
-      
+
       // Fallback to first available translation
       const firstTranslation = Object.values(localizedString.translations)[0];
       if (firstTranslation) {
         return firstTranslation;
       }
-      
+
       // Return key if no translation found
       return key;
     } catch (error) {
@@ -732,21 +804,26 @@ class LocalizationService {
     }
   }
 
-  getCulturalSymbol(symbolId: string, language?: string): CulturalSymbol | null {
+  getCulturalSymbol(
+    symbolId: string,
+    language?: string
+  ): CulturalSymbol | null {
     try {
       const targetLanguage = language || this.currentLanguage;
-      
+
       // Find the cultural symbol
-      const culturalSymbol = this.culturalSymbols.find(symbol => symbol.id === symbolId);
+      const culturalSymbol = this.culturalSymbols.find(
+        symbol => symbol.id === symbolId
+      );
       if (!culturalSymbol) {
         return null;
       }
-      
+
       // Check if symbol is available for the target language
       if (culturalSymbol.languages.includes(targetLanguage)) {
         return culturalSymbol;
       }
-      
+
       // Return symbol anyway (it's culturally appropriate)
       return culturalSymbol;
     } catch (error) {
@@ -759,7 +836,7 @@ class LocalizationService {
   getVoiceSettings(language?: string): VoiceSettings {
     try {
       const targetLanguage = language || this.currentLanguage;
-      
+
       // Default voice settings
       const defaultVoiceSettings: VoiceSettings = {
         language: targetLanguage,
@@ -770,7 +847,7 @@ class LocalizationService {
         gender: 'neutral',
         accent: 'standard',
       };
-      
+
       // Language-specific voice settings
       const voiceSettings: Record<string, Partial<VoiceSettings>> = {
         en: { voice: 'en-US', gender: 'female', accent: 'american' },
@@ -786,7 +863,7 @@ class LocalizationService {
         hi: { voice: 'hi-IN', gender: 'female', accent: 'hindi' },
         ru: { voice: 'ru-RU', gender: 'male', accent: 'russian' },
       };
-      
+
       const languageSettings = voiceSettings[targetLanguage] || {};
       return { ...defaultVoiceSettings, ...languageSettings };
     } catch (error) {
@@ -807,7 +884,7 @@ class LocalizationService {
   formatDate(date: Date, language?: string): string {
     try {
       const targetLanguage = language || this.currentLanguage;
-      
+
       // Language-specific date formats
       const dateFormats: Record<string, string> = {
         en: 'MM/DD/YYYY',
@@ -823,14 +900,14 @@ class LocalizationService {
         hi: 'DD/MM/YYYY',
         ru: 'DD.MM.YYYY',
       };
-      
+
       const format = dateFormats[targetLanguage] || 'MM/DD/YYYY';
-      
+
       // Simple date formatting (in production, use a proper date library)
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');
-      
+
       return format
         .replace('YYYY', year.toString())
         .replace('MM', month)
@@ -844,7 +921,7 @@ class LocalizationService {
   formatTime(date: Date, language?: string): string {
     try {
       const targetLanguage = language || this.currentLanguage;
-      
+
       // Language-specific time formats
       const timeFormats: Record<string, string> = {
         en: '12h',
@@ -860,20 +937,20 @@ class LocalizationService {
         hi: '12h',
         ru: '24h',
       };
-      
+
       const format = timeFormats[targetLanguage] || '12h';
-      
+
       if (format === '12h') {
-        return date.toLocaleTimeString('en-US', { 
-          hour: 'numeric', 
+        return date.toLocaleTimeString('en-US', {
+          hour: 'numeric',
           minute: '2-digit',
-          hour12: true 
+          hour12: true,
         });
       } else {
-        return date.toLocaleTimeString('en-US', { 
-          hour: '2-digit', 
+        return date.toLocaleTimeString('en-US', {
+          hour: '2-digit',
           minute: '2-digit',
-          hour12: false 
+          hour12: false,
         });
       }
     } catch (error) {
@@ -883,16 +960,18 @@ class LocalizationService {
   }
 
   // Settings Management
-  async updateLocalizationSettings(settings: Partial<LocalizationSettings>): Promise<void> {
+  async updateLocalizationSettings(
+    settings: Partial<LocalizationSettings>
+  ): Promise<void> {
     try {
       this.localizationSettings = { ...this.localizationSettings, ...settings };
       await this.saveLocalizationSettings();
-      
+
       // Update current language if changed
       if (settings.currentLanguage) {
         this.currentLanguage = settings.currentLanguage;
       }
-      
+
       console.log('Localization settings updated');
     } catch (error) {
       console.error('Error updating localization settings:', error);
@@ -919,7 +998,9 @@ class LocalizationService {
 
   isRTLLanguage(languageCode?: string): boolean {
     const targetLanguage = languageCode || this.currentLanguage;
-    const language = this.supportedLanguages.find(lang => lang.code === targetLanguage);
+    const language = this.supportedLanguages.find(
+      lang => lang.code === targetLanguage
+    );
     return language?.isRTL || false;
   }
 
@@ -928,7 +1009,10 @@ class LocalizationService {
     try {
       const settings = await AsyncStorage.getItem('localization_settings');
       if (settings) {
-        this.localizationSettings = { ...this.localizationSettings, ...JSON.parse(settings) };
+        this.localizationSettings = {
+          ...this.localizationSettings,
+          ...JSON.parse(settings),
+        };
         this.currentLanguage = this.localizationSettings.currentLanguage;
       }
     } catch (error) {
@@ -938,7 +1022,10 @@ class LocalizationService {
 
   private async saveLocalizationSettings(): Promise<void> {
     try {
-      await AsyncStorage.setItem('localization_settings', JSON.stringify(this.localizationSettings));
+      await AsyncStorage.setItem(
+        'localization_settings',
+        JSON.stringify(this.localizationSettings)
+      );
     } catch (error) {
       console.error('Error saving localization settings:', error);
     }

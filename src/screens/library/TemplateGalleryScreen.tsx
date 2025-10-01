@@ -1,192 +1,264 @@
 // Template Gallery Screen
+// Community template browsing and management
 
 import React, { useState, useEffect } from 'react';
+import { getThemeColors } from '../../utils/themeUtils';
+import { useVisualSettings } from '../../contexts/VisualSettingsContext';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
-  TouchableOpacity,
   FlatList,
-  Image,
-  Alert,
+  TouchableOpacity,
   TextInput,
+  Alert,
   Modal,
-  Dimensions,
+  ScrollView,
+  ActivityIndicator,
 } from 'react-native';
-import { useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
+import { useSelector } from 'react-redux';
 
 import { RootState } from '../../store';
-import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../../constants';
-import TemplateService, { Template, TemplateCategory, TemplateSearchOptions } from '../../services/templateService';
-import DatabaseService from '../../services/databaseService';
+import { TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../../constants';
+import TemplateSharingService, {
+  TemplatePackage,
+  TemplateReview,
+} from '../../services/templateSharingService';
 
-const { width } = Dimensions.get('window');
+interface TemplateGalleryScreenProps {
+  navigation: any;
+}
 
-export default function TemplateGalleryScreen() {
-  const currentUser = useSelector((state: RootState) => state.user.currentUser);
-  const [templateService] = useState(() => TemplateService.getInstance());
-  const [templates, setTemplates] = useState<Template[]>([]);
-  const [categories, setCategories] = useState<TemplateCategory[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+export default function TemplateGalleryScreen({
+  navigation,
+}: TemplateGalleryScreenProps) {
+  const { theme } = useVisualSettings();
+  const safeTheme = theme || 'light'; // Ensure theme is never undefined
+  const themeColors = getThemeColors(safeTheme);
+  const { currentUser } = useSelector((state: RootState) => state.user);
+
+  const [templates, setTemplates] = useState<TemplatePackage[]>([]);
+  const [filteredTemplates, setFilteredTemplates] = useState<TemplatePackage[]>(
+    []
+  );
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('');
   const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] =
+    useState<TemplatePackage | null>(null);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+
+  const sharingService = TemplateSharingService.getInstance();
+
+  const categories = [
+    'All Categories',
+    'Basic Communication',
+    'Daily Activities',
+    'Education',
+    'Social Skills',
+    'Therapy Goals',
+    'Custom',
+  ];
+
+  const difficulties = ['All Levels', 'beginner', 'intermediate', 'advanced'];
 
   useEffect(() => {
     loadTemplates();
-    loadCategories();
   }, []);
 
   useEffect(() => {
-    searchTemplates();
-  }, [selectedCategory, searchTerm]);
+    filterTemplates();
+  }, [templates, searchQuery, selectedCategory, selectedDifficulty]);
 
-  const loadTemplates = () => {
-    const allTemplates = templateService.getAllTemplates();
-    setTemplates(allTemplates);
-  };
-
-  const loadCategories = () => {
-    const allCategories = templateService.getCategories();
-    setCategories(allCategories);
-  };
-
-  const searchTemplates = () => {
-    const options: TemplateSearchOptions = {};
-    
-    if (selectedCategory !== 'all') {
-      options.category = selectedCategory;
-    }
-    
-    if (searchTerm.trim()) {
-      options.searchTerm = searchTerm.trim();
-    }
-
-    const results = templateService.searchTemplates(options);
-    setTemplates(results);
-  };
-
-  const handleTemplatePress = (template: Template) => {
-    setSelectedTemplate(template);
-    setShowTemplateModal(true);
-  };
-
-  const handleDownloadTemplate = async (template: Template) => {
-    if (!currentUser) {
-      Alert.alert('Error', 'Please log in to download templates');
-      return;
-    }
-
+  const loadTemplates = async () => {
     try {
       setIsLoading(true);
-
-      // Create a copy of the template book for the user
-      const userBook = {
-        ...template.book,
-        id: `user-${Date.now()}-${Math.random()}`,
-        userId: currentUser.id,
-        name: `${template.name} (Copy)`,
-        isTemplate: false,
-        isShared: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      // Update page and button IDs
-      userBook.pages = userBook.pages.map(page => ({
-        ...page,
-        id: `page-${Date.now()}-${Math.random()}`,
-        bookId: userBook.id,
-        buttons: page.buttons.map(button => ({
-          ...button,
-          id: `btn-${Date.now()}-${Math.random()}`,
-          pageId: `page-${Date.now()}-${Math.random()}`,
-        })),
-      }));
-
-      // Save to database
-      await DatabaseService.createBook(userBook);
-
-      Alert.alert(
-        'Success',
-        `Template "${template.name}" has been added to your library!`,
-        [
-          { text: 'OK', style: 'default' },
-          { 
-            text: 'View Library', 
-            onPress: () => {
-              // Navigate to library screen
-              setShowTemplateModal(false);
-            }
-          },
-        ]
-      );
-
+      const communityTemplates = await sharingService.getCommunityTemplates();
+      setTemplates(communityTemplates);
     } catch (error) {
-      console.error('Error downloading template:', error);
-      Alert.alert('Error', 'Failed to download template');
+      console.error('Error loading templates:', error);
+      Alert.alert('Error', 'Failed to load templates. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const renderCategoryItem = ({ item }: { item: TemplateCategory }) => (
+  const filterTemplates = () => {
+    let filtered = [...templates];
+
+    // Search filter
+    if (searchQuery.trim()) {
+      filtered = filtered.filter(
+        template =>
+          template.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          template.description
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          template.tags.some(tag =>
+            tag.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+      );
+    }
+
+    // Category filter
+    if (selectedCategory && selectedCategory !== 'All Categories') {
+      filtered = filtered.filter(
+        template => template.category === selectedCategory
+      );
+    }
+
+    // Difficulty filter
+    if (selectedDifficulty && selectedDifficulty !== 'All Levels') {
+      filtered = filtered.filter(
+        template => template.difficulty === selectedDifficulty
+      );
+    }
+
+    setFilteredTemplates(filtered);
+  };
+
+  const handleDownloadTemplate = async (template: TemplatePackage) => {
+    if (!currentUser) {
+      Alert.alert('Login Required', 'Please log in to download templates.');
+      return;
+    }
+
+    try {
+      const book = await sharingService.downloadTemplate(
+        template.id,
+        currentUser.id
+      );
+      if (book) {
+        Alert.alert(
+          'Download Complete',
+          `"${template.title}" has been downloaded to your library.`,
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        );
+      } else {
+        Alert.alert(
+          'Download Failed',
+          'Failed to download template. Please try again.'
+        );
+      }
+    } catch (error) {
+      console.error('Error downloading template:', error);
+      Alert.alert(
+        'Download Failed',
+        'Failed to download template. Please try again.'
+      );
+    }
+  };
+
+  const handleRateTemplate = async () => {
+    if (!selectedTemplate || !currentUser) return;
+
+    try {
+      const success = await sharingService.rateTemplate(
+        selectedTemplate.id,
+        currentUser.id,
+        currentUser.name,
+        reviewRating,
+        reviewComment
+      );
+
+      if (success) {
+        Alert.alert('Thank You', 'Your review has been submitted.');
+        setShowReviewModal(false);
+        setReviewComment('');
+        setReviewRating(5);
+        loadTemplates(); // Refresh to show updated rating
+      } else {
+        Alert.alert('Error', 'Failed to submit review. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error rating template:', error);
+      Alert.alert('Error', 'Failed to submit review. Please try again.');
+    }
+  };
+
+  const renderTemplateCard = ({ item }: { item: TemplatePackage }) => (
     <TouchableOpacity
-      style={[
-        styles.categoryItem,
-        selectedCategory === item.id && styles.categoryItemSelected
-      ]}
-      onPress={() => setSelectedCategory(item.id)}
+      style={styles.templateCard}
+      onPress={() => {
+        setSelectedTemplate(item);
+        setShowTemplateModal(true);
+      }}
     >
-      <View style={[styles.categoryIcon, { backgroundColor: item.color }]}>
-        <Ionicons name={item.icon as any} size={24} color={COLORS.SURFACE} />
+      <View style={styles.templateHeader}>
+        <View style={styles.templateInfo}>
+          <Text style={styles.templateTitle}>{item.title}</Text>
+          <Text style={styles.templateAuthor}>by {item.author}</Text>
+        </View>
+        <View style={styles.templateRating}>
+          <Ionicons name="star" size={16} color={themeColors.warning} />
+          <Text style={styles.ratingText}>{item.rating.toFixed(1)}</Text>
+        </View>
       </View>
-      <Text style={[
-        styles.categoryName,
-        selectedCategory === item.id && styles.categoryNameSelected
-      ]}>
-        {item.name}
-      </Text>
-      <Text style={styles.categoryCount}>{item.templateCount}</Text>
+
+      <Text style={styles.templateDescription}>{item.description}</Text>
+
+      <View style={styles.templateMeta}>
+        <View style={styles.metaItem}>
+          <Ionicons
+            name="folder"
+            size={14}
+            color={themeColors.textSecondary}
+          />
+          <Text style={styles.metaText}>{item.category}</Text>
+        </View>
+        <View style={styles.metaItem}>
+          <Ionicons
+            name="trending-up"
+            size={14}
+            color={themeColors.textSecondary}
+          />
+          <Text style={styles.metaText}>{item.difficulty}</Text>
+        </View>
+        <View style={styles.metaItem}>
+          <Ionicons
+            name="download"
+            size={14}
+            color={themeColors.textSecondary}
+          />
+          <Text style={styles.metaText}>{item.downloadCount}</Text>
+        </View>
+      </View>
+
+      <View style={styles.templateTags}>
+        {item.tags.slice(0, 3).map((tag, index) => (
+          <View key={index} style={styles.tag}>
+            <Text style={styles.tagText}>{tag}</Text>
+          </View>
+        ))}
+        {item.tags.length > 3 && (
+          <Text style={styles.moreTagsText}>+{item.tags.length - 3} more</Text>
+        )}
+      </View>
     </TouchableOpacity>
   );
 
-  const renderTemplateItem = ({ item }: { item: Template }) => (
+  const renderFilterButton = (
+    title: string,
+    isSelected: boolean,
+    onPress: () => void
+  ) => (
     <TouchableOpacity
-      style={styles.templateItem}
-      onPress={() => handleTemplatePress(item)}
+      style={[styles.filterButton, isSelected && styles.filterButtonSelected]}
+      onPress={onPress}
     >
-      <View style={styles.templateThumbnail}>
-        <Text style={styles.templateThumbnailText}>{item.thumbnail}</Text>
-        {item.isPremium && (
-          <View style={styles.premiumBadge}>
-            <Ionicons name="star" size={12} color={COLORS.WARNING} />
-          </View>
-        )}
-      </View>
-      <View style={styles.templateInfo}>
-        <Text style={styles.templateName} numberOfLines={2}>{item.name}</Text>
-        <Text style={styles.templateDescription} numberOfLines={2}>
-          {item.description}
-        </Text>
-        <View style={styles.templateMeta}>
-          <View style={styles.templateRating}>
-            <Ionicons name="star" size={12} color={COLORS.WARNING} />
-            <Text style={styles.templateRatingText}>{item.rating}</Text>
-          </View>
-          <Text style={styles.templateDownloads}>{item.downloadCount} downloads</Text>
-        </View>
-        <View style={styles.templateTags}>
-          {item.tags.slice(0, 2).map((tag, index) => (
-            <View key={index} style={styles.tag}>
-              <Text style={styles.tagText}>{tag}</Text>
-            </View>
-          ))}
-        </View>
-      </View>
+      <Text
+        style={[
+          styles.filterButtonText,
+          isSelected && styles.filterButtonTextSelected,
+        ]}
+      >
+        {title}
+      </Text>
     </TouchableOpacity>
   );
 
@@ -205,148 +277,312 @@ export default function TemplateGalleryScreen() {
               style={styles.modalCloseButton}
               onPress={() => setShowTemplateModal(false)}
             >
-              <Ionicons name="close" size={24} color={COLORS.TEXT_PRIMARY} />
+              <Ionicons
+                name="close"
+                size={24}
+                color={themeColors.text_PRIMARY}
+              />
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>{selectedTemplate.name}</Text>
-            <View style={styles.modalSpacer} />
+            <Text style={styles.modalTitle}>Template Details</Text>
           </View>
 
           <ScrollView style={styles.modalContent}>
-            <View style={styles.templatePreview}>
-              <Text style={styles.templatePreviewThumbnail}>
-                {selectedTemplate.thumbnail}
+            <View style={styles.templateDetails}>
+              <Text style={styles.detailTitle}>{selectedTemplate.title}</Text>
+              <Text style={styles.detailAuthor}>
+                by {selectedTemplate.author}
               </Text>
-              <Text style={styles.templatePreviewDescription}>
+
+              <View style={styles.detailRating}>
+                <Ionicons name="star" size={20} color={themeColors.warning} />
+                <Text style={styles.detailRatingText}>
+                  {selectedTemplate.rating.toFixed(1)}
+                </Text>
+                <Text style={styles.detailRatingCount}>
+                  ({selectedTemplate.reviews.length} reviews)
+                </Text>
+              </View>
+
+              <Text style={styles.detailDescription}>
                 {selectedTemplate.description}
               </Text>
-            </View>
 
-            <View style={styles.templateDetails}>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Category:</Text>
-                <Text style={styles.detailValue}>{selectedTemplate.category}</Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Difficulty:</Text>
-                <Text style={styles.detailValue}>{selectedTemplate.difficulty}</Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Age Range:</Text>
-                <Text style={styles.detailValue}>{selectedTemplate.ageRange}</Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Author:</Text>
-                <Text style={styles.detailValue}>{selectedTemplate.author}</Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Rating:</Text>
-                <View style={styles.ratingContainer}>
-                  <Ionicons name="star" size={16} color={COLORS.WARNING} />
-                  <Text style={styles.detailValue}>{selectedTemplate.rating}/5.0</Text>
+              <View style={styles.detailMeta}>
+                <View style={styles.metaRow}>
+                  <Text style={styles.metaLabel}>Category:</Text>
+                  <Text style={styles.metaValue}>
+                    {selectedTemplate.category}
+                  </Text>
+                </View>
+                <View style={styles.metaRow}>
+                  <Text style={styles.metaLabel}>Difficulty:</Text>
+                  <Text style={styles.metaValue}>
+                    {selectedTemplate.difficulty}
+                  </Text>
+                </View>
+                <View style={styles.metaRow}>
+                  <Text style={styles.metaLabel}>Age Range:</Text>
+                  <Text style={styles.metaValue}>
+                    {selectedTemplate.ageRange}
+                  </Text>
+                </View>
+                <View style={styles.metaRow}>
+                  <Text style={styles.metaLabel}>Language:</Text>
+                  <Text style={styles.metaValue}>
+                    {selectedTemplate.language}
+                  </Text>
+                </View>
+                <View style={styles.metaRow}>
+                  <Text style={styles.metaLabel}>Downloads:</Text>
+                  <Text style={styles.metaValue}>
+                    {selectedTemplate.downloadCount}
+                  </Text>
                 </View>
               </View>
+
+              <View style={styles.detailTags}>
+                <Text style={styles.tagsTitle}>Tags:</Text>
+                <View style={styles.tagsContainer}>
+                  {selectedTemplate.tags.map((tag, index) => (
+                    <View key={index} style={styles.detailTag}>
+                      <Text style={styles.detailTagText}>{tag}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+
+              {selectedTemplate.reviews.length > 0 && (
+                <View style={styles.reviewsSection}>
+                  <Text style={styles.reviewsTitle}>Reviews</Text>
+                  {selectedTemplate.reviews.slice(0, 3).map(review => (
+                    <View key={review.id} style={styles.reviewItem}>
+                      <View style={styles.reviewHeader}>
+                        <Text style={styles.reviewAuthor}>
+                          {review.userName}
+                        </Text>
+                        <View style={styles.reviewRating}>
+                          {[...Array(5)].map((_, i) => (
+                            <Ionicons
+                              key={i}
+                              name={i < review.rating ? 'star' : 'star-outline'}
+                              size={14}
+                              color={themeColors.warning}
+                            />
+                          ))}
+                        </View>
+                      </View>
+                      <Text style={styles.reviewComment}>{review.comment}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
             </View>
 
-            <View style={styles.templateTags}>
-              <Text style={styles.tagsTitle}>Tags:</Text>
-              <View style={styles.tagsContainer}>
-                {selectedTemplate.tags.map((tag, index) => (
-                  <View key={index} style={styles.tag}>
-                    <Text style={styles.tagText}>{tag}</Text>
-                  </View>
-                ))}
-              </View>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.downloadButton}
+                onPress={() => handleDownloadTemplate(selectedTemplate)}
+              >
+                <Ionicons
+                  name="download"
+                  size={20}
+                  color={themeColors.surface}
+                />
+                <Text style={styles.downloadButtonText}>Download Template</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.reviewButton}
+                onPress={() => {
+                  setShowTemplateModal(false);
+                  setShowReviewModal(true);
+                }}
+              >
+                <Ionicons name="star" size={20} color={themeColors.primary} />
+                <Text style={styles.reviewButtonText}>Rate & Review</Text>
+              </TouchableOpacity>
             </View>
           </ScrollView>
-
-          <View style={styles.modalFooter}>
-            <TouchableOpacity
-              style={[
-                styles.downloadButton,
-                selectedTemplate.isPremium && styles.premiumButton
-              ]}
-              onPress={() => handleDownloadTemplate(selectedTemplate)}
-              disabled={isLoading}
-            >
-              <Ionicons 
-                name={selectedTemplate.isPremium ? "star" : "download"} 
-                size={20} 
-                color={COLORS.SURFACE} 
-              />
-              <Text style={styles.downloadButtonText}>
-                {selectedTemplate.isPremium ? 'Download Premium' : 'Download Free'}
-              </Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </Modal>
     );
   };
 
+  const renderReviewModal = () => (
+    <Modal
+      visible={showReviewModal}
+      animationType="slide"
+      presentationStyle="pageSheet"
+    >
+      <View style={styles.modalContainer}>
+        <View style={styles.modalHeader}>
+          <TouchableOpacity
+            style={styles.modalCloseButton}
+            onPress={() => setShowReviewModal(false)}
+          >
+            <Ionicons name="close" size={24} color={themeColors.text_PRIMARY} />
+          </TouchableOpacity>
+          <Text style={styles.modalTitle}>Rate Template</Text>
+        </View>
+
+        <ScrollView style={styles.modalContent}>
+          <View style={styles.reviewForm}>
+            <Text style={styles.reviewFormTitle}>
+              Rate "{selectedTemplate?.title}"
+            </Text>
+
+            <View style={styles.ratingSection}>
+              <Text style={styles.ratingLabel}>Rating:</Text>
+              <View style={styles.starRating}>
+                {[...Array(5)].map((_, i) => (
+                  <TouchableOpacity
+                    key={i}
+                    onPress={() => setReviewRating(i + 1)}
+                  >
+                    <Ionicons
+                      name={i < reviewRating ? 'star' : 'star-outline'}
+                      size={32}
+                      color={themeColors.warning}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.commentSection}>
+              <Text style={styles.commentLabel}>Comment (optional):</Text>
+              <TextInput
+                style={styles.commentInput}
+                value={reviewComment}
+                onChangeText={setReviewComment}
+                placeholder="Share your experience with this template..."
+                placeholderTextColor={themeColors.textSecondary}
+                multiline
+                numberOfLines={4}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={styles.submitReviewButton}
+              onPress={handleRateTemplate}
+            >
+              <Ionicons
+                name="checkmark"
+                size={20}
+                color={themeColors.surface}
+              />
+              <Text style={styles.submitReviewButtonText}>Submit Review</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </View>
+    </Modal>
+  );
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={themeColors.primary} />
+        <Text style={styles.loadingText}>Loading templates...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Template Gallery</Text>
-        <Text style={styles.headerSubtitle}>
-          Pre-made communication boards for every need
-        </Text>
-      </View>
-
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color={COLORS.TEXT_SECONDARY} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search templates..."
-          value={searchTerm}
-          onChangeText={setSearchTerm}
-          placeholderTextColor={COLORS.TEXT_SECONDARY}
-        />
-      </View>
-
-      {/* Categories */}
-      <View style={styles.categoriesContainer}>
         <TouchableOpacity
-          style={[
-            styles.categoryItem,
-            selectedCategory === 'all' && styles.categoryItemSelected
-          ]}
-          onPress={() => setSelectedCategory('all')}
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
         >
-          <View style={[styles.categoryIcon, { backgroundColor: COLORS.PRIMARY }]}>
-            <Ionicons name="grid" size={24} color={COLORS.SURFACE} />
-          </View>
-          <Text style={[
-            styles.categoryName,
-            selectedCategory === 'all' && styles.categoryNameSelected
-          ]}>
-            All
-          </Text>
+          <Ionicons name="arrow-back" size={24} color={themeColors.primary} />
         </TouchableOpacity>
-
-        <FlatList
-          data={categories}
-          renderItem={renderCategoryItem}
-          keyExtractor={(item) => item.id}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoriesList}
-        />
+        <Text style={styles.title}>Template Gallery</Text>
+        <TouchableOpacity style={styles.refreshButton} onPress={loadTemplates}>
+          <Ionicons name="refresh" size={24} color={themeColors.primary} />
+        </TouchableOpacity>
       </View>
 
-      {/* Templates */}
+      {/* Search */}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchInputContainer}>
+          <Ionicons
+            name="search"
+            size={20}
+            color={themeColors.textSecondary}
+          />
+          <TextInput
+            style={styles.searchInput}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search templates..."
+            placeholderTextColor={themeColors.textSecondary}
+          />
+        </View>
+      </View>
+
+      {/* Filters */}
+      <View style={styles.filtersContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={styles.filtersRow}>
+            {categories.map((category, index) => (
+              <View key={`category-${index}`}>
+                {renderFilterButton(
+                  category,
+                  selectedCategory === category,
+                  () =>
+                    setSelectedCategory(
+                      selectedCategory === category ? '' : category
+                    )
+                )}
+              </View>
+            ))}
+          </View>
+        </ScrollView>
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={styles.filtersRow}>
+            {difficulties.map((difficulty, index) => (
+              <View key={`difficulty-${index}`}>
+                {renderFilterButton(
+                  difficulty,
+                  selectedDifficulty === difficulty,
+                  () =>
+                    setSelectedDifficulty(
+                      selectedDifficulty === difficulty ? '' : difficulty
+                    )
+                )}
+              </View>
+            ))}
+          </View>
+        </ScrollView>
+      </View>
+
+      {/* Templates List */}
       <FlatList
-        data={templates}
-        renderItem={renderTemplateItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.templatesList}
+        data={filteredTemplates}
+        renderItem={renderTemplateCard}
+        keyExtractor={item => item.id}
         showsVerticalScrollIndicator={false}
-        numColumns={2}
-        columnWrapperStyle={styles.templateRow}
+        contentContainerStyle={styles.templatesList}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Ionicons
+              name="library"
+              size={64}
+              color={themeColors.textSecondary}
+            />
+            <Text style={styles.emptyTitle}>No Templates Found</Text>
+            <Text style={styles.emptyMessage}>
+              Try adjusting your search or filters to find more templates.
+            </Text>
+          </View>
+        }
       />
 
       {renderTemplateModal()}
+      {renderReviewModal()}
     </View>
   );
 }
@@ -354,280 +590,426 @@ export default function TemplateGalleryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: themeColors.background,
   },
   header: {
-    padding: SPACING.MD,
-    backgroundColor: COLORS.SURFACE,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.BORDER,
-  },
-  headerTitle: {
-    fontSize: TYPOGRAPHY.FONT_SIZES.TITLE,
-    fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
-    marginBottom: SPACING.XS,
-  },
-  headerSubtitle: {
-    fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
-  },
-  searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.SURFACE,
-    margin: SPACING.MD,
-    paddingHorizontal: SPACING.MD,
-    paddingVertical: SPACING.SM,
+    paddingHorizontal: SPACING.LG,
+    paddingVertical: SPACING.MD,
+    backgroundColor: themeColors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: themeColors.border,
+  },
+  backButton: {
+    marginRight: SPACING.MD,
+  },
+  title: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
+    color: themeColors.text_PRIMARY,
+    flex: 1,
+  },
+  refreshButton: {
+    padding: SPACING.SM,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
+    color: themeColors.textSecondary,
+    marginTop: SPACING.MD,
+  },
+  searchContainer: {
+    padding: SPACING.LG,
+    backgroundColor: themeColors.surface,
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: themeColors.background,
     borderRadius: BORDER_RADIUS.MD,
-    borderWidth: 1,
-    borderColor: COLORS.BORDER,
+    paddingHorizontal: SPACING.MD,
   },
   searchInput: {
     flex: 1,
-    marginLeft: SPACING.SM,
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
+    paddingVertical: SPACING.MD,
+    marginLeft: SPACING.SM,
   },
-  categoriesContainer: {
+  filtersContainer: {
+    backgroundColor: themeColors.surface,
+    paddingBottom: SPACING.MD,
+  },
+  filtersRow: {
     flexDirection: 'row',
+    paddingHorizontal: SPACING.LG,
+  },
+  filterButton: {
     paddingHorizontal: SPACING.MD,
-    marginBottom: SPACING.MD,
+    paddingVertical: SPACING.SM,
+    backgroundColor: themeColors.background,
+    borderRadius: BORDER_RADIUS.LARGE,
+    marginRight: SPACING.SM,
+    borderWidth: 1,
+    borderColor: themeColors.border,
   },
-  categoriesList: {
-    paddingLeft: SPACING.SM,
+  filterButtonSelected: {
+    backgroundColor: themeColors.primary,
+    borderColor: themeColors.primary,
   },
-  categoryItem: {
-    alignItems: 'center',
-    marginRight: SPACING.MD,
-    padding: SPACING.SM,
-    borderRadius: BORDER_RADIUS.MD,
-    minWidth: 80,
-  },
-  categoryItemSelected: {
-    backgroundColor: COLORS.PRIMARY + '20',
-  },
-  categoryIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: SPACING.XS,
-  },
-  categoryName: {
+  filterButtonText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_PRIMARY,
-    textAlign: 'center',
+    color: themeColors.text_PRIMARY,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
   },
-  categoryNameSelected: {
-    color: COLORS.PRIMARY,
-    fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-  },
-  categoryCount: {
-    fontSize: TYPOGRAPHY.FONT_SIZES.XS,
-    color: COLORS.TEXT_SECONDARY,
-    marginTop: 2,
+  filterButtonTextSelected: {
+    color: themeColors.surface,
   },
   templatesList: {
-    padding: SPACING.MD,
+    padding: SPACING.LG,
   },
-  templateRow: {
-    justifyContent: 'space-between',
-  },
-  templateItem: {
-    backgroundColor: COLORS.SURFACE,
+  templateCard: {
+    backgroundColor: themeColors.surface,
     borderRadius: BORDER_RADIUS.MD,
-    padding: SPACING.MD,
+    padding: SPACING.LG,
     marginBottom: SPACING.MD,
-    width: (width - SPACING.MD * 3) / 2,
-    shadowColor: COLORS.TEXT_PRIMARY,
+    shadowColor: themeColors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-  templateThumbnail: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: COLORS.BACKGROUND,
-    justifyContent: 'center',
-    alignItems: 'center',
+  templateHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: SPACING.SM,
-    position: 'relative',
-  },
-  templateThumbnailText: {
-    fontSize: 24,
-  },
-  premiumBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    backgroundColor: COLORS.SURFACE,
-    borderRadius: 10,
-    width: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.WARNING,
   },
   templateInfo: {
     flex: 1,
   },
-  templateName: {
-    fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
+  templateTitle: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginBottom: SPACING.XS,
   },
-  templateDescription: {
+  templateAuthor: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
-    marginBottom: SPACING.SM,
-    lineHeight: 16,
-  },
-  templateMeta: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.SM,
+    color: themeColors.textSecondary,
   },
   templateRating: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  templateRatingText: {
+  ratingText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_PRIMARY,
-    marginLeft: 2,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
+    color: themeColors.text_PRIMARY,
+    marginLeft: SPACING.XS,
   },
-  templateDownloads: {
-    fontSize: TYPOGRAPHY.FONT_SIZES.XS,
-    color: COLORS.TEXT_SECONDARY,
+  templateDescription: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
+    color: themeColors.textSecondary,
+    lineHeight: 22,
+    marginBottom: SPACING.MD,
+  },
+  templateMeta: {
+    flexDirection: 'row',
+    marginBottom: SPACING.MD,
+  },
+  metaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: SPACING.LG,
+  },
+  metaText: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
+    color: themeColors.textSecondary,
+    marginLeft: SPACING.XS,
   },
   templateTags: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    alignItems: 'center',
   },
   tag: {
-    backgroundColor: COLORS.PRIMARY + '20',
-    paddingHorizontal: SPACING.XS,
-    paddingVertical: 2,
+    backgroundColor: themeColors.primary_LIGHT,
+    paddingHorizontal: SPACING.SM,
+    paddingVertical: SPACING.XS,
     borderRadius: BORDER_RADIUS.SM,
-    marginRight: SPACING.XS,
+    marginRight: SPACING.SM,
     marginBottom: SPACING.XS,
   },
   tagText: {
-    fontSize: TYPOGRAPHY.FONT_SIZES.XS,
-    color: COLORS.PRIMARY,
+    fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
+    color: themeColors.primary,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
+  },
+  moreTagsText: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
+    color: themeColors.textSecondary,
+    fontStyle: 'italic',
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.XL,
+  },
+  emptyTitle: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
+    color: themeColors.text_PRIMARY,
+    marginTop: SPACING.LG,
+    marginBottom: SPACING.SM,
+  },
+  emptyMessage: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
+    color: themeColors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: themeColors.background,
   },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: SPACING.MD,
+    paddingHorizontal: SPACING.LG,
+    paddingVertical: SPACING.MD,
+    backgroundColor: themeColors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.BORDER,
+    borderBottomColor: themeColors.border,
   },
   modalCloseButton: {
-    padding: SPACING.SM,
+    marginRight: SPACING.MD,
   },
   modalTitle: {
-    flex: 1,
     fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
-    textAlign: 'center',
-  },
-  modalSpacer: {
-    width: 40,
+    color: themeColors.text_PRIMARY,
   },
   modalContent: {
     flex: 1,
-    padding: SPACING.MD,
-  },
-  templatePreview: {
-    alignItems: 'center',
     padding: SPACING.LG,
-    backgroundColor: COLORS.SURFACE,
-    borderRadius: BORDER_RADIUS.MD,
-    marginBottom: SPACING.MD,
-  },
-  templatePreviewThumbnail: {
-    fontSize: 48,
-    marginBottom: SPACING.MD,
-  },
-  templatePreviewDescription: {
-    fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
-    textAlign: 'center',
-    lineHeight: 22,
   },
   templateDetails: {
-    backgroundColor: COLORS.SURFACE,
+    backgroundColor: themeColors.surface,
     borderRadius: BORDER_RADIUS.MD,
-    padding: SPACING.MD,
+    padding: SPACING.LG,
+    marginBottom: SPACING.LG,
+  },
+  detailTitle: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.XLARGE,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
+    color: themeColors.text_PRIMARY,
+    marginBottom: SPACING.XS,
+  },
+  detailAuthor: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
+    color: themeColors.textSecondary,
     marginBottom: SPACING.MD,
   },
-  detailRow: {
+  detailRating: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.MD,
+  },
+  detailRatingText: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
+    color: themeColors.text_PRIMARY,
+    marginLeft: SPACING.SM,
+  },
+  detailRatingCount: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
+    color: themeColors.textSecondary,
+    marginLeft: SPACING.SM,
+  },
+  detailDescription: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
+    color: themeColors.textSecondary,
+    lineHeight: 24,
+    marginBottom: SPACING.LG,
+  },
+  detailMeta: {
+    marginBottom: SPACING.LG,
+  },
+  metaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
     paddingVertical: SPACING.SM,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.DIVIDER,
+    borderBottomColor: themeColors.border,
   },
-  detailLabel: {
+  metaLabel: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_SECONDARY,
-  },
-  detailValue: {
-    fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
   },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  metaValue: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
+    color: themeColors.textSecondary,
+  },
+  detailTags: {
+    marginBottom: SPACING.LG,
   },
   tagsTitle: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginBottom: SPACING.SM,
   },
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
   },
-  modalFooter: {
+  detailTag: {
+    backgroundColor: themeColors.primary_LIGHT,
+    paddingHorizontal: SPACING.SM,
+    paddingVertical: SPACING.XS,
+    borderRadius: BORDER_RADIUS.SM,
+    marginRight: SPACING.SM,
+    marginBottom: SPACING.XS,
+  },
+  detailTagText: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
+    color: themeColors.primary,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
+  },
+  reviewsSection: {
+    marginTop: SPACING.LG,
+  },
+  reviewsTitle: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
+    color: themeColors.text_PRIMARY,
+    marginBottom: SPACING.MD,
+  },
+  reviewItem: {
+    backgroundColor: themeColors.background,
     padding: SPACING.MD,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.BORDER,
+    borderRadius: BORDER_RADIUS.MD,
+    marginBottom: SPACING.MD,
+  },
+  reviewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.SM,
+  },
+  reviewAuthor: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
+    color: themeColors.text_PRIMARY,
+  },
+  reviewRating: {
+    flexDirection: 'row',
+  },
+  reviewComment: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
+    color: themeColors.textSecondary,
+    lineHeight: 18,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   downloadButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.PRIMARY,
-    paddingVertical: SPACING.MD,
-    paddingHorizontal: SPACING.LG,
+    backgroundColor: themeColors.primary,
+    paddingVertical: SPACING.LG,
     borderRadius: BORDER_RADIUS.MD,
-    gap: SPACING.SM,
-  },
-  premiumButton: {
-    backgroundColor: COLORS.WARNING,
+    marginRight: SPACING.SM,
   },
   downloadButtonText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
+    color: themeColors.surface,
+    marginLeft: SPACING.SM,
+  },
+  reviewButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: themeColors.secondary,
+    paddingVertical: SPACING.LG,
+    borderRadius: BORDER_RADIUS.MD,
+    marginLeft: SPACING.SM,
+  },
+  reviewButtonText: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
+    color: themeColors.surface,
+    marginLeft: SPACING.SM,
+  },
+  reviewForm: {
+    backgroundColor: themeColors.surface,
+    borderRadius: BORDER_RADIUS.MD,
+    padding: SPACING.LG,
+  },
+  reviewFormTitle: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.SURFACE,
+    color: themeColors.text_PRIMARY,
+    marginBottom: SPACING.LG,
+  },
+  ratingSection: {
+    marginBottom: SPACING.LG,
+  },
+  ratingLabel: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
+    color: themeColors.text_PRIMARY,
+    marginBottom: SPACING.MD,
+  },
+  starRating: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  commentSection: {
+    marginBottom: SPACING.LG,
+  },
+  commentLabel: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
+    color: themeColors.text_PRIMARY,
+    marginBottom: SPACING.SM,
+  },
+  commentInput: {
+    backgroundColor: themeColors.background,
+    borderRadius: BORDER_RADIUS.MD,
+    padding: SPACING.MD,
+    fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
+    color: themeColors.text_PRIMARY,
+    borderWidth: 1,
+    borderColor: themeColors.border,
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  submitReviewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: themeColors.primary,
+    paddingVertical: SPACING.LG,
+    borderRadius: BORDER_RADIUS.MD,
+  },
+  submitReviewButtonText: {
+    fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
+    fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
+    color: themeColors.surface,
+    marginLeft: SPACING.SM,
   },
 });

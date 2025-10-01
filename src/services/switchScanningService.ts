@@ -16,6 +16,15 @@ export interface SwitchScanningSettings {
   switchType: 'single' | 'dual';
   autoSelect: boolean; // auto-select after scan delay
   autoSelectDelay: number; // milliseconds to wait before auto-selecting
+  // Enhanced autism-friendly settings
+  highlightColor: string; // Color for highlighting items
+  highlightStyle: 'border' | 'background' | 'pulse'; // How to highlight items
+  audioCues: boolean; // Play audio when scanning items
+  hapticFeedback: boolean; // Provide haptic feedback
+  pauseOnHover: boolean; // Pause scanning when hovering over items
+  scanSound: string; // Sound to play during scanning
+  selectSound: string; // Sound to play when selecting
+  errorSound: string; // Sound to play on errors
 }
 
 export interface ScanState {
@@ -61,6 +70,15 @@ class SwitchScanningService {
     switchType: 'single',
     autoSelect: false,
     autoSelectDelay: 3000,
+    // Enhanced autism-friendly defaults
+    highlightColor: '#FFD700', // Bright yellow for high visibility
+    highlightStyle: 'border',
+    audioCues: true,
+    hapticFeedback: true,
+    pauseOnHover: false,
+    scanSound: 'beep',
+    selectSound: 'click',
+    errorSound: 'error',
   };
 
   public static getInstance(): SwitchScanningService {
@@ -90,7 +108,7 @@ class SwitchScanningService {
   async initialize(): Promise<void> {
     try {
       console.log('🔧 Initializing Switch Scanning Service...');
-      
+
       // Set up external switch listeners if enabled
       if (this.settings.externalSwitch) {
         await this.setupExternalSwitchListeners();
@@ -148,7 +166,12 @@ class SwitchScanningService {
       return;
     }
 
-    console.log('Starting switch scanning:', { totalRows, totalColumns, totalItems, scanMode });
+    console.log('Starting switch scanning:', {
+      totalRows,
+      totalColumns,
+      totalItems,
+      scanMode,
+    });
 
     this.scanState = {
       isScanning: true,
@@ -167,20 +190,30 @@ class SwitchScanningService {
       this.startAutomaticScanning();
     }
 
-    this.emitSwitchEvent({ type: 'start', timestamp: Date.now(), source: 'internal' });
+    this.emitSwitchEvent({
+      type: 'start',
+      timestamp: Date.now(),
+      source: 'internal',
+    });
   }
 
   // Stop scanning
   stopScanning(): void {
     console.log('Stopping switch scanning');
-    
+
     this.scanState.isScanning = false;
     this.clearTimers();
-    this.emitSwitchEvent({ type: 'stop', timestamp: Date.now(), source: 'internal' });
+    this.emitSwitchEvent({
+      type: 'stop',
+      timestamp: Date.now(),
+      source: 'internal',
+    });
   }
 
   // Handle switch press
-  handleSwitchPress(switchType: 'select' | 'next' | 'previous' = 'select'): void {
+  handleSwitchPress(
+    switchType: 'select' | 'next' | 'previous' = 'select'
+  ): void {
     if (!this.scanState.isScanning) {
       console.log('Not currently scanning, ignoring switch press');
       return;
@@ -188,13 +221,15 @@ class SwitchScanningService {
 
     console.log('Switch press received:', switchType);
 
-    // Provide haptic feedback
-    if (Platform.OS === 'ios') {
+    // Provide haptic feedback for autism users
+    if (this.settings.hapticFeedback && Platform.OS === 'ios') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
 
-    // Provide audio feedback
-    if (this.settings.audioIndicator) {
+    // Provide enhanced audio feedback for autism users
+    if (this.settings.audioCues) {
+      this.playEnhancedScanAudio(switchType);
+    } else if (this.settings.audioIndicator) {
       this.playScanAudio(switchType);
     }
 
@@ -210,7 +245,11 @@ class SwitchScanningService {
         break;
     }
 
-    this.emitSwitchEvent({ type: switchType, timestamp: Date.now(), source: 'internal' });
+    this.emitSwitchEvent({
+      type: switchType,
+      timestamp: Date.now(),
+      source: 'internal',
+    });
   }
 
   // Handle select action
@@ -221,7 +260,10 @@ class SwitchScanningService {
         this.scanState.isRowScanning = false;
         this.scanState.isColumnScanning = true;
         this.scanState.currentColumn = 0;
-        console.log('Switched to column scanning, row:', this.scanState.currentRow);
+        console.log(
+          'Switched to column scanning, row:',
+          this.scanState.currentRow
+        );
       } else {
         // Select the current item
         this.selectCurrentItem();
@@ -236,12 +278,15 @@ class SwitchScanningService {
   private handleNext(): void {
     if (this.scanState.scanMode === 'row-column') {
       if (this.scanState.isRowScanning) {
-        this.scanState.currentRow = (this.scanState.currentRow + 1) % this.scanState.totalRows;
+        this.scanState.currentRow =
+          (this.scanState.currentRow + 1) % this.scanState.totalRows;
       } else {
-        this.scanState.currentColumn = (this.scanState.currentColumn + 1) % this.scanState.totalColumns;
+        this.scanState.currentColumn =
+          (this.scanState.currentColumn + 1) % this.scanState.totalColumns;
       }
     } else {
-      this.scanState.currentItem = (this.scanState.currentItem + 1) % this.scanState.totalItems;
+      this.scanState.currentItem =
+        (this.scanState.currentItem + 1) % this.scanState.totalItems;
     }
 
     this.updateHighlight();
@@ -251,18 +296,21 @@ class SwitchScanningService {
   private handlePrevious(): void {
     if (this.scanState.scanMode === 'row-column') {
       if (this.scanState.isRowScanning) {
-        this.scanState.currentRow = this.scanState.currentRow === 0 
-          ? this.scanState.totalRows - 1 
-          : this.scanState.currentRow - 1;
+        this.scanState.currentRow =
+          this.scanState.currentRow === 0
+            ? this.scanState.totalRows - 1
+            : this.scanState.currentRow - 1;
       } else {
-        this.scanState.currentColumn = this.scanState.currentColumn === 0 
-          ? this.scanState.totalColumns - 1 
-          : this.scanState.currentColumn - 1;
+        this.scanState.currentColumn =
+          this.scanState.currentColumn === 0
+            ? this.scanState.totalColumns - 1
+            : this.scanState.currentColumn - 1;
       }
     } else {
-      this.scanState.currentItem = this.scanState.currentItem === 0 
-        ? this.scanState.totalItems - 1 
-        : this.scanState.currentItem - 1;
+      this.scanState.currentItem =
+        this.scanState.currentItem === 0
+          ? this.scanState.totalItems - 1
+          : this.scanState.currentItem - 1;
     }
 
     this.updateHighlight();
@@ -321,7 +369,9 @@ class SwitchScanningService {
   }
 
   // Play scan audio feedback
-  private async playScanAudio(type: 'select' | 'next' | 'previous'): Promise<void> {
+  private async playScanAudio(
+    type: 'select' | 'next' | 'previous'
+  ): Promise<void> {
     try {
       const audioMap = {
         select: 'beep-high',
@@ -330,7 +380,9 @@ class SwitchScanningService {
       };
 
       // Use different audio cues for different actions
-      await AudioService.playScanSound(audioMap[type] as 'beep-high' | 'beep-medium' | 'beep-low');
+      await AudioService.playScanSound(
+        audioMap[type] as 'beep-high' | 'beep-medium' | 'beep-low'
+      );
     } catch (error) {
       console.error('Error playing scan audio:', error);
     }
@@ -342,12 +394,11 @@ class SwitchScanningService {
       // This would integrate with external switch hardware
       // For now, we'll simulate with keyboard events
       console.log('Setting up external switch listeners');
-      
+
       // In a real implementation, this would:
       // 1. Connect to Bluetooth switch devices
       // 2. Set up USB switch device listeners
       // 3. Configure accessibility switch services
-      
     } catch (error) {
       console.error('Error setting up external switch listeners:', error);
     }
@@ -422,6 +473,58 @@ class SwitchScanningService {
       isRowScanning: true,
       isColumnScanning: false,
     };
+  }
+
+  // Enhanced audio feedback for autism users
+  private async playEnhancedScanAudio(
+    switchType: 'select' | 'next' | 'previous'
+  ): Promise<void> {
+    try {
+      let soundToPlay: string;
+
+      switch (switchType) {
+        case 'select':
+          soundToPlay = this.settings.selectSound;
+          break;
+        case 'next':
+        case 'previous':
+          soundToPlay = this.settings.scanSound;
+          break;
+        default:
+          soundToPlay = this.settings.scanSound;
+      }
+
+      // Play the appropriate sound
+      await this.playScanSound(soundToPlay);
+    } catch (error) {
+      console.error('Error playing enhanced scan audio:', error);
+    }
+  }
+
+  // Play specific scan sounds
+  private async playScanSound(soundType: string): Promise<void> {
+    try {
+      // Map sound types to actual audio files or TTS
+      switch (soundType) {
+        case 'beep':
+          // Play a simple beep sound
+          await AudioService.playSound('beep');
+          break;
+        case 'click':
+          // Play a click sound
+          await AudioService.playSound('click');
+          break;
+        case 'error':
+          // Play an error sound
+          await AudioService.playSound('error');
+          break;
+        default:
+          // Fallback to TTS
+          await AudioService.speak(soundType);
+      }
+    } catch (error) {
+      console.error('Error playing scan sound:', error);
+    }
   }
 
   // Cleanup

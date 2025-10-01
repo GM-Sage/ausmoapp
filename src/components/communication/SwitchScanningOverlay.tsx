@@ -14,8 +14,12 @@ import { useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 
 import { RootState } from '../../store';
-import { COLORS, TYPOGRAPHY, SPACING } from '../../constants';
-import SwitchScanningService, { SwitchEvent } from '../../services/switchScanningService';
+import { TYPOGRAPHY, SPACING } from '../../constants';
+import SwitchScanningService, {
+  SwitchEvent,
+} from '../../services/switchScanningService';
+import { useVisualSettings } from '../../contexts/VisualSettingsContext';
+import { getThemeColors } from '../../utils/themeUtils';
 
 const { width, height } = Dimensions.get('window');
 
@@ -24,16 +28,131 @@ interface SwitchScanningOverlayProps {
   onSwitchPress?: (event: SwitchEvent) => void;
 }
 
-export default function SwitchScanningOverlay({ 
-  isVisible, 
-  onSwitchPress 
+export default function SwitchScanningOverlay({
+  isVisible,
+  onSwitchPress,
 }: SwitchScanningOverlayProps) {
+  const { theme } = useVisualSettings();
+  const safeTheme = theme || 'light'; // Ensure theme is never undefined
+  const themeColors = getThemeColors(safeTheme);
   const currentUser = useSelector((state: RootState) => state.user.currentUser);
   const [scanService] = useState(() => SwitchScanningService.getInstance());
   const [scanState, setScanState] = useState(scanService.getScanState());
   const [settings, setSettings] = useState(scanService.getSettings());
   const [pulseAnimation] = useState(new Animated.Value(1));
   const [scanIndicatorAnimation] = useState(new Animated.Value(0));
+
+  const styles = StyleSheet.create({
+    overlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 1000,
+    },
+    overlayContainer: {
+      backgroundColor: themeColors.surface,
+      borderRadius: 20,
+      padding: 30,
+      alignItems: 'center',
+      minWidth: 300,
+      maxWidth: width * 0.8,
+      shadowColor: themeColors.shadow,
+      shadowOffset: {
+        width: 0,
+        height: 4,
+      },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 10,
+    },
+    scanIndicator: {
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      backgroundColor: themeColors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 10,
+    },
+    scanIndicatorText: {
+      color: themeColors.surface,
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
+    modeContainer: {
+      alignItems: 'center',
+      marginBottom: 20,
+    },
+    modeText: {
+      color: themeColors.surface,
+      fontSize: 18,
+      fontWeight: 'bold',
+      marginBottom: 5,
+    },
+    modeSubtext: {
+      color: themeColors.surface,
+      fontSize: 14,
+      textAlign: 'center',
+    },
+    controlsContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      alignItems: 'center',
+    },
+    switchButton: {
+      backgroundColor: themeColors.surface,
+      padding: 20,
+      borderRadius: 12,
+      alignItems: 'center',
+      minWidth: 80,
+      shadowColor: themeColors.shadow,
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+      elevation: 5,
+    },
+    switchButtonText: {
+      color: themeColors.text,
+      fontSize: 12,
+      fontWeight: '600',
+      marginTop: 5,
+    },
+    settingsInfo: {
+      marginTop: 20,
+      alignItems: 'center',
+    },
+    settingsText: {
+      color: themeColors.surface,
+      fontSize: 12,
+      textAlign: 'center',
+    },
+    scanIndicatorContainer: {
+      alignItems: 'center',
+      marginBottom: 20,
+    },
+    singleSwitchContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      alignItems: 'center',
+    },
+    dualSwitchContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      alignItems: 'center',
+    },
+    modeIndicator: {
+      alignItems: 'center',
+      marginBottom: 20,
+    },
+  });
 
   useEffect(() => {
     if (!isVisible) return;
@@ -125,10 +244,9 @@ export default function SwitchScanningOverlay({
           ]}
         />
         <Text style={styles.scanIndicatorText}>
-          {scanState.scanMode === 'row-column' 
+          {scanState.scanMode === 'row-column'
             ? `Row ${scanState.currentRow + 1}${scanState.isColumnScanning ? `, Column ${scanState.currentColumn + 1}` : ''}`
-            : `Item ${scanState.currentItem + 1}`
-          }
+            : `Item ${scanState.currentItem + 1}`}
         </Text>
       </View>
     );
@@ -145,7 +263,11 @@ export default function SwitchScanningOverlay({
             accessibilityLabel="Select current item"
             accessibilityRole="button"
           >
-            <Ionicons name="radio-button-on" size={32} color={COLORS.PRIMARY} />
+            <Ionicons
+              name="radio-button-on"
+              size={32}
+              color={themeColors.primary}
+            />
             <Text style={styles.switchButtonText}>Select</Text>
           </TouchableOpacity>
         </View>
@@ -160,10 +282,14 @@ export default function SwitchScanningOverlay({
             accessibilityLabel="Next item"
             accessibilityRole="button"
           >
-            <Ionicons name="chevron-forward" size={24} color={COLORS.PRIMARY} />
+            <Ionicons
+              name="chevron-forward"
+              size={24}
+              color={themeColors.primary}
+            />
             <Text style={styles.switchButtonText}>Next</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity
             style={styles.switchButton}
             onPress={() => scanService.handleSwitchPress('select')}
@@ -171,10 +297,14 @@ export default function SwitchScanningOverlay({
             accessibilityLabel="Select current item"
             accessibilityRole="button"
           >
-            <Ionicons name="radio-button-on" size={32} color={COLORS.SUCCESS} />
+            <Ionicons
+              name="radio-button-on"
+              size={32}
+              color={themeColors.success}
+            />
             <Text style={styles.switchButtonText}>Select</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity
             style={styles.switchButton}
             onPress={() => scanService.handleSwitchPress('previous')}
@@ -182,7 +312,11 @@ export default function SwitchScanningOverlay({
             accessibilityLabel="Previous item"
             accessibilityRole="button"
           >
-            <Ionicons name="chevron-back" size={24} color={COLORS.PRIMARY} />
+            <Ionicons
+              name="chevron-back"
+              size={24}
+              color={themeColors.primary}
+            />
             <Text style={styles.switchButtonText}>Previous</Text>
           </TouchableOpacity>
         </View>
@@ -194,13 +328,16 @@ export default function SwitchScanningOverlay({
     return (
       <View style={styles.modeIndicator}>
         <Text style={styles.modeText}>
-          {scanState.scanMode === 'row-column' ? 'Row-Column Scan' : 'Item Scan'}
+          {scanState.scanMode === 'row-column'
+            ? 'Row-Column Scan'
+            : 'Item Scan'}
         </Text>
         <Text style={styles.modeSubtext}>
-          {scanState.scanMode === 'row-column' 
-            ? (scanState.isRowScanning ? 'Select row, then column' : 'Select column')
-            : 'Select item'
-          }
+          {scanState.scanMode === 'row-column'
+            ? scanState.isRowScanning
+              ? 'Select row, then column'
+              : 'Select column'
+            : 'Select item'}
         </Text>
       </View>
     );
@@ -210,122 +347,20 @@ export default function SwitchScanningOverlay({
     <View style={styles.overlay}>
       {/* Scan Indicator */}
       {renderScanIndicator()}
-      
+
       {/* Scan Mode Indicator */}
       {renderScanModeIndicator()}
-      
+
       {/* Switch Controls */}
       {renderSwitchControls()}
-      
+
       {/* Settings Info */}
       <View style={styles.settingsInfo}>
         <Text style={styles.settingsText}>
-          Speed: {settings.speed}ms | Mode: {settings.mode} | Type: {settings.switchType}
+          Speed: {settings.speed}ms | Mode: {settings.mode} | Type:{' '}
+          {settings.switchType}
         </Text>
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
-  },
-  scanIndicatorContainer: {
-    position: 'absolute',
-    top: 100,
-    left: 20,
-    right: 20,
-    alignItems: 'center',
-  },
-  scanIndicator: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: COLORS.PRIMARY,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  scanIndicatorText: {
-    color: COLORS.SURFACE,
-    fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  modeIndicator: {
-    position: 'absolute',
-    top: 200,
-    left: 20,
-    right: 20,
-    alignItems: 'center',
-  },
-  modeText: {
-    color: COLORS.SURFACE,
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 5,
-  },
-  modeSubtext: {
-    color: COLORS.SURFACE,
-    fontSize: 14,
-    textAlign: 'center',
-    opacity: 0.8,
-  },
-  singleSwitchContainer: {
-    position: 'absolute',
-    bottom: 150,
-    left: 20,
-    right: 20,
-    alignItems: 'center',
-  },
-  dualSwitchContainer: {
-    position: 'absolute',
-    bottom: 150,
-    left: 20,
-    right: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-  },
-  switchButton: {
-    backgroundColor: COLORS.SURFACE,
-    padding: 20,
-    borderRadius: 12,
-    alignItems: 'center',
-    minWidth: 80,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  switchButtonText: {
-    color: COLORS.TEXT_PRIMARY,
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 5,
-  },
-  settingsInfo: {
-    position: 'absolute',
-    bottom: 50,
-    left: 20,
-    right: 20,
-    alignItems: 'center',
-  },
-  settingsText: {
-    color: COLORS.SURFACE,
-    fontSize: 12,
-    textAlign: 'center',
-    opacity: 0.7,
-  },
-});

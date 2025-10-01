@@ -2,7 +2,13 @@
 
 import React, { Component, ReactNode } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { COLORS, TYPOGRAPHY } from '../../constants';
+import { TYPOGRAPHY } from '../../constants';
+import {
+  captureSentryException,
+  addSentryBreadcrumb,
+} from '../../config/sentry';
+import { useVisualSettings } from '../../contexts/VisualSettingsContext';
+import { getThemeColors } from '../../utils/themeUtils';
 
 interface Props {
   children: ReactNode;
@@ -25,24 +31,42 @@ export default class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: any) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
+
+    // Send error to Sentry for tracking
+    captureSentryException(error, {
+      componentStack: errorInfo.componentStack,
+      errorBoundary: 'ErrorBoundary',
+      timestamp: new Date().toISOString(),
+    });
+
+    // Add breadcrumb for debugging
+    addSentryBreadcrumb(
+      `ErrorBoundary caught error: ${error.message}`,
+      'error',
+      'error',
+      {
+        errorName: error.name,
+        errorMessage: error.message,
+        componentStack: errorInfo.componentStack,
+      }
+    );
   }
 
   handleRetry = () => {
+    // Add breadcrumb for retry attempt
+    addSentryBreadcrumb(
+      'User attempted to retry after error',
+      'user_action',
+      'info'
+    );
+
     this.setState({ hasError: false, error: undefined });
   };
 
   render() {
     if (this.state.hasError) {
       return (
-        <View style={styles.container}>
-          <Text style={styles.title}>Something went wrong</Text>
-          <Text style={styles.message}>
-            {this.state.error?.message || 'An unexpected error occurred'}
-          </Text>
-          <TouchableOpacity style={styles.button} onPress={this.handleRetry}>
-            <Text style={styles.buttonText}>Try Again</Text>
-          </TouchableOpacity>
-        </View>
+        <ErrorDisplay error={this.state.error} onRetry={this.handleRetry} />
       );
     }
 
@@ -50,37 +74,36 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.BACKGROUND,
-    padding: 20,
-  },
-  title: {
-    fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
-    fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.ERROR,
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  message: {
-    fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_SECONDARY,
-    textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: TYPOGRAPHY.LINE_HEIGHTS.NORMAL * TYPOGRAPHY.FONT_SIZES.MEDIUM,
-  },
-  button: {
-    backgroundColor: COLORS.PRIMARY,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  buttonText: {
-    fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
-    color: COLORS.SURFACE,
-  },
-});
+// Theme-aware error display component
+function ErrorDisplay({
+  error,
+  onRetry,
+}: {
+  error?: Error;
+  onRetry: () => void;
+}) {
+  const { theme } = useVisualSettings();
+  const safeTheme = theme || 'light'; // Ensure theme is never undefined
+  const themeColors = getThemeColors(safeTheme);
+
+  return (
+    <View
+      style={[styles.container, { backgroundColor: themeColors.background }]}
+    >
+      <Text style={[styles.title, { color: themeColors.text }]}>
+        Something went wrong
+      </Text>
+      <Text style={[styles.message, { color: themeColors.textSecondary }]}>
+        {error?.message || 'An unexpected error occurred'}
+      </Text>
+      <TouchableOpacity
+        style={[styles.button, { backgroundColor: themeColors.primary }]}
+        onPress={onRetry}
+      >
+        <Text style={[styles.buttonText, { color: themeColors.text }]}>
+          Try Again
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+}

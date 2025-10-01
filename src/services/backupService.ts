@@ -7,18 +7,18 @@ import * as DocumentPicker from 'expo-document-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
-import { 
-  User, 
-  CommunicationBook, 
-  CommunicationPage, 
-  CommunicationButton, 
-  Message, 
-  Symbol, 
+import {
+  User,
+  CommunicationBook,
+  CommunicationPage,
+  CommunicationButton,
+  Message,
+  Symbol,
   UsageAnalytics,
-  BackupData 
+  BackupData,
 } from '../types';
-import DatabaseService from './databaseService';
-import SupabaseDatabaseService from './supabaseDatabaseService';
+import { DatabaseService } from './databaseService';
+import { SupabaseDatabaseService } from './supabaseDatabaseService';
 
 export interface BackupOptions {
   includeUsers: boolean;
@@ -36,6 +36,15 @@ export interface ExportOptions {
   includeImages: boolean;
   includeAudio: boolean;
   includeMetadata: boolean;
+}
+
+export interface PDFExportOptions {
+  includePageNumbers: boolean;
+  includeBookTitle: boolean;
+  includeUserInfo: boolean;
+  pageSize: 'A4' | 'Letter' | 'Legal';
+  orientation: 'portrait' | 'landscape';
+  quality: 'low' | 'medium' | 'high';
 }
 
 export interface CloudBackupOptions {
@@ -80,7 +89,9 @@ class BackupService {
   }
 
   // Create a complete backup
-  async createBackup(options: Partial<BackupOptions> = {}): Promise<BackupResult> {
+  async createBackup(
+    options: Partial<BackupOptions> = {}
+  ): Promise<BackupResult> {
     if (this.isBackingUp) {
       return { success: false, error: 'Backup already in progress' };
     }
@@ -175,7 +186,6 @@ class BackupService {
         fileSize,
         backupId,
       };
-
     } catch (error) {
       console.error('Error creating backup:', error);
       return {
@@ -190,7 +200,19 @@ class BackupService {
   // Restore from backup
   async restoreBackup(filePath: string): Promise<RestoreResult> {
     if (this.isRestoring) {
-      return { success: false, error: 'Restore already in progress', restoredItems: { users: 0, books: 0, pages: 0, buttons: 0, messages: 0, symbols: 0, analytics: 0 } };
+      return {
+        success: false,
+        error: 'Restore already in progress',
+        restoredItems: {
+          users: 0,
+          books: 0,
+          pages: 0,
+          buttons: 0,
+          messages: 0,
+          symbols: 0,
+          analytics: 0,
+        },
+      };
     }
 
     this.isRestoring = true;
@@ -204,7 +226,19 @@ class BackupService {
 
       // Validate backup data
       if (!this.validateBackupData(backupData)) {
-        return { success: false, error: 'Invalid backup file format', restoredItems: { users: 0, books: 0, pages: 0, buttons: 0, messages: 0, symbols: 0, analytics: 0 } };
+        return {
+          success: false,
+          error: 'Invalid backup file format',
+          restoredItems: {
+            users: 0,
+            books: 0,
+            pages: 0,
+            buttons: 0,
+            messages: 0,
+            symbols: 0,
+            analytics: 0,
+          },
+        };
       }
 
       const restoredItems = {
@@ -233,7 +267,10 @@ class BackupService {
           await DatabaseService.createBook(book);
           restoredItems.books++;
           restoredItems.pages += book.pages.length;
-          restoredItems.buttons += book.pages.reduce((total, page) => total + page.buttons.length, 0);
+          restoredItems.buttons += book.pages.reduce(
+            (total, page) => total + page.buttons.length,
+            0
+          );
         } catch (error) {
           console.error('Error restoring book:', error);
         }
@@ -275,7 +312,6 @@ class BackupService {
         success: true,
         restoredItems,
       };
-
     } catch (error) {
       console.error('Error restoring backup:', error);
       return {
@@ -311,7 +347,9 @@ class BackupService {
 
       switch (options.format) {
         case 'json':
-          exportContent = await FileSystem.readAsStringAsync(backupData.filePath);
+          exportContent = await FileSystem.readAsStringAsync(
+            backupData.filePath
+          );
           fileExtension = 'json';
           break;
         case 'csv':
@@ -342,7 +380,6 @@ class BackupService {
         filePath: exportFilePath,
         fileSize,
       };
-
     } catch (error) {
       console.error('Error exporting data:', error);
       return {
@@ -380,12 +417,23 @@ class BackupService {
       });
 
       if (result.canceled || !result.assets || result.assets.length === 0) {
-        return { success: false, error: 'No file selected', restoredItems: { users: 0, books: 0, pages: 0, buttons: 0, messages: 0, symbols: 0, analytics: 0 } };
+        return {
+          success: false,
+          error: 'No file selected',
+          restoredItems: {
+            users: 0,
+            books: 0,
+            pages: 0,
+            buttons: 0,
+            messages: 0,
+            symbols: 0,
+            analytics: 0,
+          },
+        };
       }
 
       const filePath = result.assets[0].uri;
       return await this.restoreBackup(filePath);
-
     } catch (error) {
       console.error('Error importing data:', error);
       return {
@@ -428,7 +476,6 @@ class BackupService {
         default:
           return { success: false, error: 'Unsupported cloud provider' };
       }
-
     } catch (error) {
       console.error('Error backing up to cloud:', error);
       return {
@@ -510,7 +557,7 @@ class BackupService {
   private convertToCSV(backupData: any): string {
     // Simple CSV conversion - in a real app, this would be more comprehensive
     const csvLines = ['Type,ID,Name,Created'];
-    
+
     backupData.users.forEach((user: User) => {
       csvLines.push(`User,${user.id},${user.name},${user.createdAt}`);
     });
@@ -529,14 +576,14 @@ class BackupService {
     xml += `  <version>${backupData.version}</version>\n`;
     xml += `  <created_at>${backupData.createdAt}</created_at>\n`;
     xml += '  <users>\n';
-    
+
     backupData.users.forEach((user: User) => {
       xml += `    <user id="${user.id}" name="${user.name}" />\n`;
     });
-    
+
     xml += '  </users>\n';
     xml += '</ausmo_backup>';
-    
+
     return xml;
   }
 
@@ -558,6 +605,158 @@ class BackupService {
   private async backupToOneDrive(filePath: string): Promise<BackupResult> {
     // OneDrive backup implementation would go here
     return { success: false, error: 'OneDrive backup not yet implemented' };
+  }
+
+  // Export communication book as PDF pages (GoTalk NOW style)
+  async exportBookAsPDF(
+    bookId: string,
+    options: PDFExportOptions
+  ): Promise<BackupResult> {
+    try {
+      console.log('Exporting book as PDF:', bookId, options);
+
+      const book = await this.databaseService.getBook(bookId);
+      if (!book) {
+        return { success: false, error: 'Book not found' };
+      }
+
+      // This would integrate with a PDF generation library
+      // For now, we'll create a placeholder implementation
+      const pdfContent = this.generatePDFContent(book, options);
+
+      const fileName = `ausmo_${book.name.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.pdf`;
+      const filePath = `${(FileSystem as any).documentDirectory || (FileSystem as any).cacheDirectory || ''}${fileName}`;
+
+      // In a real implementation, you would use a PDF library like react-native-pdf-lib
+      // or expo-print to generate the actual PDF
+      await FileSystem.writeAsStringAsync(filePath, pdfContent);
+
+      const fileInfo = await FileSystem.getInfoAsync(filePath);
+      const fileSize = (fileInfo as any).size || 0;
+
+      return {
+        success: true,
+        filePath,
+        fileSize,
+      };
+    } catch (error) {
+      console.error('Error exporting book as PDF:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  // Generate PDF content (placeholder implementation)
+  private generatePDFContent(book: any, options: PDFExportOptions): string {
+    // This is a placeholder - in a real implementation, you would generate actual PDF content
+    const content = {
+      title: options.includeBookTitle ? book.name : 'Communication Book',
+      userInfo: options.includeUserInfo ? 'User: ' + book.userId : '',
+      pages: book.pages.map((page: any, index: number) => ({
+        pageNumber: options.includePageNumbers ? index + 1 : null,
+        title: page.name,
+        type: page.type,
+        buttons: page.buttons.map((button: any) => ({
+          text: button.text,
+          image: button.image,
+          position: button.position,
+        })),
+      })),
+      exportDate: new Date().toISOString(),
+      options,
+    };
+
+    return JSON.stringify(content, null, 2);
+  }
+
+  // Export individual page as PDF
+  async exportPageAsPDF(
+    pageId: string,
+    options: PDFExportOptions
+  ): Promise<BackupResult> {
+    try {
+      console.log('Exporting page as PDF:', pageId, options);
+
+      const page = await this.databaseService.getPage(pageId);
+      if (!page) {
+        return { success: false, error: 'Page not found' };
+      }
+
+      const pdfContent = this.generatePagePDFContent(page, options);
+
+      const fileName = `ausmo_page_${page.name.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.pdf`;
+      const filePath = `${(FileSystem as any).documentDirectory || (FileSystem as any).cacheDirectory || ''}${fileName}`;
+
+      await FileSystem.writeAsStringAsync(filePath, pdfContent);
+
+      const fileInfo = await FileSystem.getInfoAsync(filePath);
+      const fileSize = (fileInfo as any).size || 0;
+
+      return {
+        success: true,
+        filePath,
+        fileSize,
+      };
+    } catch (error) {
+      console.error('Error exporting page as PDF:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  private generatePagePDFContent(page: any, options: PDFExportOptions): string {
+    const content = {
+      title: page.name,
+      type: page.type,
+      buttons: page.buttons.map((button: any) => ({
+        text: button.text,
+        image: button.image,
+        position: button.position,
+        backgroundColor: button.backgroundColor,
+        textColor: button.textColor,
+      })),
+      exportDate: new Date().toISOString(),
+      options,
+    };
+
+    return JSON.stringify(content, null, 2);
+  }
+
+  // Compress backup data
+  async compressBackup(filePath: string): Promise<BackupResult> {
+    try {
+      console.log('Compressing backup:', filePath);
+
+      // This would integrate with a compression library
+      // For now, we'll create a placeholder implementation
+      const compressedFileName = filePath.replace('.json', '.zip');
+
+      // In a real implementation, you would use a compression library
+      // to create a ZIP file containing the backup data
+      await FileSystem.copyAsync({
+        from: filePath,
+        to: compressedFileName,
+      });
+
+      const fileInfo = await FileSystem.getInfoAsync(compressedFileName);
+      const fileSize = (fileInfo as any).size || 0;
+
+      return {
+        success: true,
+        filePath: compressedFileName,
+        fileSize,
+      };
+    } catch (error) {
+      console.error('Error compressing backup:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
   }
 
   // Get backup status

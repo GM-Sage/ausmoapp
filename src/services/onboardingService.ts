@@ -33,7 +33,12 @@ export interface Tutorial {
   id: string;
   title: string;
   description: string;
-  category: 'basic' | 'advanced' | 'accessibility' | 'collaboration' | 'education';
+  category:
+    | 'basic'
+    | 'advanced'
+    | 'accessibility'
+    | 'collaboration'
+    | 'education';
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   estimatedTime: number; // minutes
   steps: TutorialStep[];
@@ -134,7 +139,8 @@ class OnboardingService {
       {
         id: 'welcome',
         title: 'Welcome to Ausmo',
-        description: 'Let\'s get you started with your AAC communication journey',
+        description:
+          "Let's get you started with your AAC communication journey",
         type: 'welcome',
         screen: 'WelcomeScreen',
         component: 'WelcomeOnboarding',
@@ -299,8 +305,8 @@ class OnboardingService {
       },
       {
         id: 'onboarding_complete',
-        title: 'You\'re All Set!',
-        description: 'Congratulations! You\'re ready to start communicating',
+        title: "You're All Set!",
+        description: "Congratulations! You're ready to start communicating",
         type: 'completion',
         screen: 'HomeScreen',
         component: 'OnboardingComplete',
@@ -339,7 +345,8 @@ class OnboardingService {
             title: 'Understanding Symbols',
             description: 'Learn how symbols represent words and concepts',
             type: 'instruction',
-            content: 'Symbols are visual representations of words, ideas, or actions. They help you communicate by tapping or selecting them.',
+            content:
+              'Symbols are visual representations of words, ideas, or actions. They help you communicate by tapping or selecting them.',
             media: {
               type: 'image',
               url: 'symbol_explanation.png',
@@ -347,15 +354,22 @@ class OnboardingService {
             },
             actions: [],
             isCompleted: false,
-            hints: ['Look for familiar symbols', 'Symbols can represent objects, actions, or feelings'],
-            successCriteria: ['Understand what symbols are', 'Recognize common symbols'],
+            hints: [
+              'Look for familiar symbols',
+              'Symbols can represent objects, actions, or feelings',
+            ],
+            successCriteria: [
+              'Understand what symbols are',
+              'Recognize common symbols',
+            ],
           },
           {
             id: 'basic_comm_step2',
             title: 'Tapping to Communicate',
             description: 'Learn how to tap symbols to speak',
             type: 'interactive',
-            content: 'Tap any symbol to hear it spoken aloud. Try tapping different symbols to build sentences.',
+            content:
+              'Tap any symbol to hear it spoken aloud. Try tapping different symbols to build sentences.',
             actions: [
               {
                 id: 'tap_symbol',
@@ -374,7 +388,8 @@ class OnboardingService {
             title: 'Building Sentences',
             description: 'Learn how to combine symbols to form sentences',
             type: 'practice',
-            content: 'Combine multiple symbols to create complete sentences. Start with simple phrases like "I want" + "food".',
+            content:
+              'Combine multiple symbols to create complete sentences. Start with simple phrases like "I want" + "food".',
             actions: [
               {
                 id: 'build_sentence',
@@ -385,8 +400,14 @@ class OnboardingService {
               },
             ],
             isCompleted: false,
-            hints: ['Start with "I want" or "I need"', 'Add action words and objects'],
-            successCriteria: ['Build a complete sentence', 'Understand sentence structure'],
+            hints: [
+              'Start with "I want" or "I need"',
+              'Add action words and objects',
+            ],
+            successCriteria: [
+              'Build a complete sentence',
+              'Understand sentence structure',
+            ],
           },
         ],
       },
@@ -403,20 +424,29 @@ class OnboardingService {
           {
             id: 'advanced_step1',
             title: 'Word Prediction',
-            description: 'Learn how to use word prediction for faster communication',
+            description:
+              'Learn how to use word prediction for faster communication',
             type: 'instruction',
-            content: 'Word prediction suggests words as you type, making communication faster and more efficient.',
+            content:
+              'Word prediction suggests words as you type, making communication faster and more efficient.',
             actions: [],
             isCompleted: false,
-            hints: ['Look for suggested words above the keyboard', 'Tap suggested words to use them'],
-            successCriteria: ['Understand word prediction', 'Use suggested words'],
+            hints: [
+              'Look for suggested words above the keyboard',
+              'Tap suggested words to use them',
+            ],
+            successCriteria: [
+              'Understand word prediction',
+              'Use suggested words',
+            ],
           },
           {
             id: 'advanced_step2',
             title: 'Quick Phrases',
             description: 'Learn how to use and create quick phrases',
             type: 'interactive',
-            content: 'Quick phrases are pre-made sentences you can use frequently. Create your own for common needs.',
+            content:
+              'Quick phrases are pre-made sentences you can use frequently. Create your own for common needs.',
             actions: [
               {
                 id: 'use_quick_phrase',
@@ -427,7 +457,10 @@ class OnboardingService {
               },
             ],
             isCompleted: false,
-            hints: ['Quick phrases appear at the top of the keyboard', 'Create phrases for common needs'],
+            hints: [
+              'Quick phrases appear at the top of the keyboard',
+              'Create phrases for common needs',
+            ],
             successCriteria: ['Use quick phrases', 'Create custom phrases'],
           },
         ],
@@ -447,22 +480,36 @@ class OnboardingService {
             title: 'Switch Scanning',
             description: 'Learn how to use switch scanning for communication',
             type: 'instruction',
-            content: 'Switch scanning allows you to navigate through options using external switches or buttons.',
+            content:
+              'Switch scanning allows you to navigate through options using external switches or buttons.',
             actions: [],
             isCompleted: false,
-            hints: ['Switch scanning highlights options automatically', 'Use switches to select highlighted options'],
-            successCriteria: ['Understand switch scanning', 'Know how to use switches'],
+            hints: [
+              'Switch scanning highlights options automatically',
+              'Use switches to select highlighted options',
+            ],
+            successCriteria: [
+              'Understand switch scanning',
+              'Know how to use switches',
+            ],
           },
           {
             id: 'accessibility_step2',
             title: 'Screen Reader Support',
             description: 'Learn about screen reader compatibility',
             type: 'instruction',
-            content: 'The app works with screen readers to provide audio descriptions of all elements.',
+            content:
+              'The app works with screen readers to provide audio descriptions of all elements.',
             actions: [],
             isCompleted: false,
-            hints: ['Enable screen reader in device settings', 'Listen for audio descriptions'],
-            successCriteria: ['Understand screen reader support', 'Know how to enable it'],
+            hints: [
+              'Enable screen reader in device settings',
+              'Listen for audio descriptions',
+            ],
+            successCriteria: [
+              'Understand screen reader support',
+              'Know how to enable it',
+            ],
           },
         ],
       },
@@ -481,22 +528,36 @@ class OnboardingService {
             title: 'Sharing Books',
             description: 'Learn how to share communication books with others',
             type: 'instruction',
-            content: 'You can share your communication books with therapists, caregivers, and family members.',
+            content:
+              'You can share your communication books with therapists, caregivers, and family members.',
             actions: [],
             isCompleted: false,
-            hints: ['Use the share button in the library', 'Choose who to share with'],
-            successCriteria: ['Understand sharing functionality', 'Know how to share books'],
+            hints: [
+              'Use the share button in the library',
+              'Choose who to share with',
+            ],
+            successCriteria: [
+              'Understand sharing functionality',
+              'Know how to share books',
+            ],
           },
           {
             id: 'collaboration_step2',
             title: 'Remote Support',
             description: 'Learn about remote support features',
             type: 'instruction',
-            content: 'Therapists can provide remote support and guidance through the app.',
+            content:
+              'Therapists can provide remote support and guidance through the app.',
             actions: [],
             isCompleted: false,
-            hints: ['Remote support requires internet connection', 'Therapists can see your progress'],
-            successCriteria: ['Understand remote support', 'Know how to request help'],
+            hints: [
+              'Remote support requires internet connection',
+              'Therapists can see your progress',
+            ],
+            successCriteria: [
+              'Understand remote support',
+              'Know how to request help',
+            ],
           },
         ],
       },
@@ -515,18 +576,23 @@ class OnboardingService {
             title: 'Core Vocabulary',
             description: 'Learn about core vocabulary and progressive learning',
             type: 'instruction',
-            content: 'Core vocabulary includes the most important words for communication. Learn them progressively.',
+            content:
+              'Core vocabulary includes the most important words for communication. Learn them progressively.',
             actions: [],
             isCompleted: false,
             hints: ['Start with basic words', 'Practice regularly'],
-            successCriteria: ['Understand core vocabulary', 'Know how to practice'],
+            successCriteria: [
+              'Understand core vocabulary',
+              'Know how to practice',
+            ],
           },
           {
             id: 'education_step2',
             title: 'Learning Activities',
             description: 'Learn about educational games and activities',
             type: 'interactive',
-            content: 'Engage in fun learning activities to improve your communication skills.',
+            content:
+              'Engage in fun learning activities to improve your communication skills.',
             actions: [
               {
                 id: 'complete_activity',
@@ -537,8 +603,14 @@ class OnboardingService {
               },
             ],
             isCompleted: false,
-            hints: ['Activities are designed to be fun', 'Complete activities regularly'],
-            successCriteria: ['Complete learning activities', 'Understand educational features'],
+            hints: [
+              'Activities are designed to be fun',
+              'Complete activities regularly',
+            ],
+            successCriteria: [
+              'Complete learning activities',
+              'Understand educational features',
+            ],
           },
         ],
       },
@@ -566,7 +638,7 @@ class OnboardingService {
 
       this.onboardingProgress = progress;
       await this.saveOnboardingProgress();
-      
+
       console.log('Onboarding started for user:', this.currentUser.id);
       return progress;
     } catch (error) {
@@ -593,12 +665,14 @@ class OnboardingService {
       // Update progress
       this.onboardingProgress.completedSteps.push(stepId);
       this.onboardingProgress.progress = Math.round(
-        (this.onboardingProgress.completedSteps.length / this.onboardingProgress.totalSteps) * 100
+        (this.onboardingProgress.completedSteps.length /
+          this.onboardingProgress.totalSteps) *
+          100
       );
 
       // Move to next step
-      const nextStep = this.onboardingSteps.find(s => 
-        s.order === step.order + 1 && !s.isCompleted
+      const nextStep = this.onboardingSteps.find(
+        s => s.order === step.order + 1 && !s.isCompleted
       );
       if (nextStep) {
         this.onboardingProgress.currentStep = nextStep.id;
@@ -632,8 +706,8 @@ class OnboardingService {
       this.onboardingProgress.skippedSteps.push(stepId);
 
       // Move to next step
-      const nextStep = this.onboardingSteps.find(s => 
-        s.order === step.order + 1 && !s.isCompleted
+      const nextStep = this.onboardingSteps.find(
+        s => s.order === step.order + 1 && !s.isCompleted
       );
       if (nextStep) {
         this.onboardingProgress.currentStep = nextStep.id;
@@ -665,7 +739,10 @@ class OnboardingService {
     }
   }
 
-  async completeTutorialStep(tutorialId: string, stepId: string): Promise<void> {
+  async completeTutorialStep(
+    tutorialId: string,
+    stepId: string
+  ): Promise<void> {
     try {
       const tutorial = this.tutorials.find(t => t.id === tutorialId);
       if (!tutorial) {
@@ -683,7 +760,9 @@ class OnboardingService {
 
       // Update tutorial progress
       const completedSteps = tutorial.steps.filter(s => s.isCompleted).length;
-      tutorial.progress = Math.round((completedSteps / tutorial.steps.length) * 100);
+      tutorial.progress = Math.round(
+        (completedSteps / tutorial.steps.length) * 100
+      );
 
       // Check if tutorial is completed
       if (tutorial.progress === 100) {
@@ -701,11 +780,13 @@ class OnboardingService {
   }
 
   // Settings Management
-  async updateOnboardingSettings(settings: Partial<OnboardingSettings>): Promise<void> {
+  async updateOnboardingSettings(
+    settings: Partial<OnboardingSettings>
+  ): Promise<void> {
     try {
       this.onboardingSettings = { ...this.onboardingSettings, ...settings };
       await this.saveOnboardingSettings();
-      
+
       console.log('Onboarding settings updated');
     } catch (error) {
       console.error('Error updating onboarding settings:', error);
@@ -740,17 +821,23 @@ class OnboardingService {
 
   getCurrentStep(): OnboardingStep | null {
     if (!this.onboardingProgress) return null;
-    return this.onboardingSteps.find(s => s.id === this.onboardingProgress!.currentStep) || null;
+    return (
+      this.onboardingSteps.find(
+        s => s.id === this.onboardingProgress!.currentStep
+      ) || null
+    );
   }
 
   getNextStep(): OnboardingStep | null {
     if (!this.onboardingProgress) return null;
     const currentStep = this.getCurrentStep();
     if (!currentStep) return null;
-    
-    return this.onboardingSteps.find(s => 
-      s.order === currentStep.order + 1 && !s.isCompleted
-    ) || null;
+
+    return (
+      this.onboardingSteps.find(
+        s => s.order === currentStep.order + 1 && !s.isCompleted
+      ) || null
+    );
   }
 
   // Helper Methods
@@ -758,7 +845,10 @@ class OnboardingService {
     try {
       const settings = await AsyncStorage.getItem('onboarding_settings');
       if (settings) {
-        this.onboardingSettings = { ...this.onboardingSettings, ...JSON.parse(settings) };
+        this.onboardingSettings = {
+          ...this.onboardingSettings,
+          ...JSON.parse(settings),
+        };
       }
     } catch (error) {
       console.error('Error loading onboarding settings:', error);
@@ -767,7 +857,10 @@ class OnboardingService {
 
   private async saveOnboardingSettings(): Promise<void> {
     try {
-      await AsyncStorage.setItem('onboarding_settings', JSON.stringify(this.onboardingSettings));
+      await AsyncStorage.setItem(
+        'onboarding_settings',
+        JSON.stringify(this.onboardingSettings)
+      );
     } catch (error) {
       console.error('Error saving onboarding settings:', error);
     }
@@ -776,8 +869,10 @@ class OnboardingService {
   private async loadOnboardingProgress(): Promise<void> {
     try {
       if (!this.currentUser) return;
-      
-      const progress = await AsyncStorage.getItem(`onboarding_progress_${this.currentUser.id}`);
+
+      const progress = await AsyncStorage.getItem(
+        `onboarding_progress_${this.currentUser.id}`
+      );
       if (progress) {
         this.onboardingProgress = JSON.parse(progress);
       }
@@ -789,7 +884,7 @@ class OnboardingService {
   private async saveOnboardingProgress(): Promise<void> {
     try {
       if (!this.currentUser || !this.onboardingProgress) return;
-      
+
       await AsyncStorage.setItem(
         `onboarding_progress_${this.currentUser.id}`,
         JSON.stringify(this.onboardingProgress)

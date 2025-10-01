@@ -1,26 +1,36 @@
 // Symbol API Slice using RTK Query
 
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+
+// Declare FormData for React Native compatibility
+declare global {
+  interface FormData {
+    append(name: string, value: string | Blob, fileName?: string): void;
+  }
+}
 import { Symbol, ApiResponse, PaginatedResponse } from '../../types';
 
 export const symbolApi = createApi({
   reducerPath: 'symbolApi',
   baseQuery: fetchBaseQuery({
     baseUrl: '/api/symbols',
-    prepareHeaders: (headers) => {
+    prepareHeaders: headers => {
       headers.set('Content-Type', 'application/json');
       return headers;
     },
   }),
   tagTypes: ['Symbol'],
-  endpoints: (builder) => ({
+  endpoints: builder => ({
     // Symbols
-    getSymbols: builder.query<PaginatedResponse<Symbol>, { 
-      category?: string; 
-      search?: string; 
-      page?: number; 
-      limit?: number; 
-    }>({
+    getSymbols: builder.query<
+      PaginatedResponse<Symbol>,
+      {
+        category?: string;
+        search?: string;
+        page?: number;
+        limit?: number;
+      }
+    >({
       query: ({ category, search, page = 1, limit = 50 }) => {
         const params = new URLSearchParams();
         if (category) params.append('category', category);
@@ -32,21 +42,23 @@ export const symbolApi = createApi({
       providesTags: ['Symbol'],
     }),
     getSymbol: builder.query<Symbol, string>({
-      query: (symbolId) => symbolId,
-      providesTags: (result, error, symbolId) => [{ type: 'Symbol', id: symbolId }],
+      query: symbolId => symbolId,
+      providesTags: (result, error, symbolId) => [
+        { type: 'Symbol', id: symbolId },
+      ],
     }),
     getSymbolsByCategory: builder.query<Symbol[], string>({
-      query: (category) => `category/${category}`,
+      query: category => `category/${category}`,
       providesTags: ['Symbol'],
     }),
     searchSymbols: builder.query<Symbol[], string>({
-      query: (searchTerm) => `search?q=${encodeURIComponent(searchTerm)}`,
+      query: searchTerm => `search?q=${encodeURIComponent(searchTerm)}`,
       providesTags: ['Symbol'],
     }),
-    
+
     // Custom Symbols
     createCustomSymbol: builder.mutation<Symbol, Partial<Symbol>>({
-      query: (symbol) => ({
+      query: symbol => ({
         url: 'custom',
         method: 'POST',
         body: symbol,
@@ -54,80 +66,100 @@ export const symbolApi = createApi({
       invalidatesTags: ['Symbol'],
     }),
     updateCustomSymbol: builder.mutation<Symbol, Symbol>({
-      query: (symbol) => ({
+      query: symbol => ({
         url: `custom/${symbol.id}`,
         method: 'PUT',
         body: symbol,
       }),
-      invalidatesTags: (result, error, symbol) => [{ type: 'Symbol', id: symbol.id }],
+      invalidatesTags: (result, error, symbol) => [
+        { type: 'Symbol', id: symbol.id },
+      ],
     }),
     deleteCustomSymbol: builder.mutation<void, string>({
-      query: (symbolId) => ({
+      query: symbolId => ({
         url: `custom/${symbolId}`,
         method: 'DELETE',
       }),
       invalidatesTags: ['Symbol'],
     }),
-    
+
     // Symbol Categories
     getCategories: builder.query<string[], void>({
       query: () => 'categories',
       providesTags: ['Symbol'],
     }),
-    
+
     // Symbol Upload
     uploadSymbolImage: builder.mutation<string, FormData>({
-      query: (formData) => ({
+      query: formData => ({
         url: 'upload',
         method: 'POST',
         body: formData,
       }),
       invalidatesTags: ['Symbol'],
     }),
-    
+
     // Symbol Usage
-    getSymbolUsage: builder.query<Array<{ symbolId: string; usageCount: number; lastUsed: string }>, string>({
-      query: (userId) => `${userId}/usage`,
+    getSymbolUsage: builder.query<
+      Array<{ symbolId: string; usageCount: number; lastUsed: string }>,
+      string
+    >({
+      query: userId => `${userId}/usage`,
       providesTags: ['Symbol'],
     }),
-    updateSymbolUsage: builder.mutation<void, { symbolId: string; userId: string }>({
+    updateSymbolUsage: builder.mutation<
+      void,
+      { symbolId: string; userId: string }
+    >({
       query: ({ symbolId, userId }) => ({
         url: `${userId}/usage/${symbolId}`,
         method: 'POST',
       }),
       invalidatesTags: ['Symbol'],
     }),
-    
+
     // Symbol Favorites
     getFavoriteSymbols: builder.query<Symbol[], string>({
-      query: (userId) => `${userId}/favorites`,
+      query: userId => `${userId}/favorites`,
       providesTags: ['Symbol'],
     }),
-    addFavoriteSymbol: builder.mutation<void, { symbolId: string; userId: string }>({
+    addFavoriteSymbol: builder.mutation<
+      void,
+      { symbolId: string; userId: string }
+    >({
       query: ({ symbolId, userId }) => ({
         url: `${userId}/favorites/${symbolId}`,
         method: 'POST',
       }),
       invalidatesTags: ['Symbol'],
     }),
-    removeFavoriteSymbol: builder.mutation<void, { symbolId: string; userId: string }>({
+    removeFavoriteSymbol: builder.mutation<
+      void,
+      { symbolId: string; userId: string }
+    >({
       query: ({ symbolId, userId }) => ({
         url: `${userId}/favorites/${symbolId}`,
         method: 'DELETE',
       }),
       invalidatesTags: ['Symbol'],
     }),
-    
+
     // Symbol Import/Export
-    exportSymbols: builder.mutation<Blob, { userId: string; category?: string }>({
+    exportSymbols: builder.mutation<
+      Blob,
+      { userId: string; category?: string }
+    >({
       query: ({ userId, category }) => ({
         url: `${userId}/export`,
         method: 'GET',
         params: category ? { category } : {},
-        responseHandler: (response) => response.blob(),
+        responseHandler: response => response.blob(),
       }),
     }),
-    importSymbols: builder.mutation<Symbol[], { userId: string; symbols: Partial<Symbol>[] }>({
+    importSymbols: builder.mutation<
+      Symbol[],
+      { userId: string; symbols: Partial<Symbol>[] }
+    >({
       query: ({ userId, symbols }) => ({
         url: `${userId}/import`,
         method: 'POST',
@@ -135,9 +167,12 @@ export const symbolApi = createApi({
       }),
       invalidatesTags: ['Symbol'],
     }),
-    
+
     // Symbol Suggestions
-    getSymbolSuggestions: builder.query<Symbol[], { userId: string; context?: string }>({
+    getSymbolSuggestions: builder.query<
+      Symbol[],
+      { userId: string; context?: string }
+    >({
       query: ({ userId, context }) => {
         const params = new URLSearchParams();
         if (context) params.append('context', context);
@@ -145,9 +180,12 @@ export const symbolApi = createApi({
       },
       providesTags: ['Symbol'],
     }),
-    
+
     // Symbol Validation
-    validateSymbol: builder.mutation<{ valid: boolean; suggestions?: string[] }, { name: string; category: string }>({
+    validateSymbol: builder.mutation<
+      { valid: boolean; suggestions?: string[] },
+      { name: string; category: string }
+    >({
       query: ({ name, category }) => ({
         url: 'validate',
         method: 'POST',

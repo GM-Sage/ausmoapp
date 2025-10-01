@@ -3,6 +3,7 @@
   "compilerOptions": {
     "strict": true,
     "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     "jsx": "react-native",
     "lib": [
       "dom",

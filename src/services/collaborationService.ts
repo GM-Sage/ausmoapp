@@ -1,7 +1,12 @@
 // Collaboration Service for Ausmo AAC App
 // Provides multi-user editing, therapist dashboard, and remote support capabilities
 
-import { User, CommunicationBook, CommunicationPage, CommunicationButton } from '../types';
+import {
+  User,
+  CommunicationBook,
+  CommunicationPage,
+  CommunicationButton,
+} from '../types';
 
 export interface CollaborationSession {
   id: string;
@@ -106,7 +111,11 @@ export interface TherapistAnalytics {
 
 export interface TherapistNotification {
   id: string;
-  type: 'session_request' | 'progress_update' | 'goal_achievement' | 'system_alert';
+  type:
+    | 'session_request'
+    | 'progress_update'
+    | 'goal_achievement'
+    | 'system_alert';
   title: string;
   message: string;
   patientId?: string;
@@ -136,7 +145,8 @@ class CollaborationService {
   private static instance: CollaborationService;
   private currentUser: User | null = null;
   private activeSessions: Map<string, CollaborationSession> = new Map();
-  private eventListeners: Map<string, (event: CollaborationEvent) => void> = new Map();
+  private eventListeners: Map<string, (event: CollaborationEvent) => void> =
+    new Map();
   private isInitialized = false;
 
   public static getInstance(): CollaborationService {
@@ -174,15 +184,17 @@ class CollaborationService {
       name,
       description,
       hostUserId: this.currentUser.id,
-      participants: [{
-        userId: this.currentUser.id,
-        name: this.currentUser.name,
-        email: this.currentUser.email,
-        role: 'therapist',
-        permissions: this.getDefaultPermissions('therapist'),
-        isOnline: true,
-        lastSeen: new Date(),
-      }],
+      participants: [
+        {
+          userId: this.currentUser.id,
+          name: this.currentUser.name,
+          email: this.currentUser.email,
+          role: 'therapist',
+          permissions: this.getDefaultPermissions('therapist'),
+          isOnline: true,
+          lastSeen: new Date(),
+        },
+      ],
       bookId,
       isActive: true,
       createdAt: new Date(),
@@ -202,12 +214,15 @@ class CollaborationService {
 
     this.activeSessions.set(session.id, session);
     await this.saveSession(session);
-    
+
     console.log('Collaboration session created:', session.id);
     return session;
   }
 
-  async joinSession(sessionId: string, role: CollaborationParticipant['role'] = 'observer'): Promise<CollaborationSession> {
+  async joinSession(
+    sessionId: string,
+    role: CollaborationParticipant['role'] = 'observer'
+  ): Promise<CollaborationSession> {
     if (!this.currentUser) {
       throw new Error('User not authenticated');
     }
@@ -233,7 +248,7 @@ class CollaborationService {
 
     session.participants.push(participant);
     session.updatedAt = new Date();
-    
+
     this.activeSessions.set(sessionId, session);
     await this.saveSession(session);
 
@@ -260,7 +275,9 @@ class CollaborationService {
     }
 
     // Remove participant
-    session.participants = session.participants.filter(p => p.userId !== this.currentUser!.id);
+    session.participants = session.participants.filter(
+      p => p.userId !== this.currentUser!.id
+    );
     session.updatedAt = new Date();
 
     // If no participants left, end session
@@ -283,7 +300,10 @@ class CollaborationService {
   }
 
   // Real-time Collaboration
-  async updateCursor(sessionId: string, position: { row: number; column: number }): Promise<void> {
+  async updateCursor(
+    sessionId: string,
+    position: { row: number; column: number }
+  ): Promise<void> {
     if (!this.currentUser) {
       throw new Error('User not authenticated');
     }
@@ -293,7 +313,9 @@ class CollaborationService {
       throw new Error('Session not found');
     }
 
-    const participant = session.participants.find(p => p.userId === this.currentUser!.id);
+    const participant = session.participants.find(
+      p => p.userId === this.currentUser!.id
+    );
     if (participant) {
       participant.cursorPosition = position;
       participant.lastSeen = new Date();
@@ -318,7 +340,9 @@ class CollaborationService {
       throw new Error('Session not found');
     }
 
-    const participant = session.participants.find(p => p.userId === this.currentUser!.id);
+    const participant = session.participants.find(
+      p => p.userId === this.currentUser!.id
+    );
     if (participant) {
       participant.currentAction = action;
       participant.lastSeen = new Date();
@@ -348,7 +372,9 @@ class CollaborationService {
   }
 
   // Therapist Dashboard
-  async getTherapistDashboard(therapistId: string): Promise<TherapistDashboard> {
+  async getTherapistDashboard(
+    therapistId: string
+  ): Promise<TherapistDashboard> {
     try {
       const patients = await this.getTherapistPatients(therapistId);
       const sessions = await this.getTherapistSessions(therapistId);
@@ -376,7 +402,11 @@ class CollaborationService {
         name: 'Alex Johnson',
         age: 8,
         diagnosis: 'Autism Spectrum Disorder',
-        goals: ['Increase vocabulary', 'Improve sentence building', 'Social communication'],
+        goals: [
+          'Increase vocabulary',
+          'Improve sentence building',
+          'Social communication',
+        ],
         progress: {
           vocabularyGrowth: 45,
           communicationEfficiency: 0.8,
@@ -397,7 +427,11 @@ class CollaborationService {
         name: 'Sarah Chen',
         age: 12,
         diagnosis: 'Cerebral Palsy',
-        goals: ['Switch scanning proficiency', 'Independent communication', 'Academic vocabulary'],
+        goals: [
+          'Switch scanning proficiency',
+          'Independent communication',
+          'Academic vocabulary',
+        ],
         progress: {
           vocabularyGrowth: 78,
           communicationEfficiency: 1.2,
@@ -410,18 +444,29 @@ class CollaborationService {
         lastSession: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
         nextSession: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
         communicationLevel: 'advanced',
-        preferredSymbols: ['I want', 'I need', 'thank you', 'good morning', 'how are you'],
+        preferredSymbols: [
+          'I want',
+          'I need',
+          'thank you',
+          'good morning',
+          'how are you',
+        ],
         customPages: ['classroom', 'lunch', 'recess', 'homework'],
       },
     ];
   }
 
-  async getTherapistSessions(therapistId: string): Promise<CollaborationSession[]> {
-    return Array.from(this.activeSessions.values())
-      .filter(session => session.participants.some(p => p.userId === therapistId));
+  async getTherapistSessions(
+    therapistId: string
+  ): Promise<CollaborationSession[]> {
+    return Array.from(this.activeSessions.values()).filter(session =>
+      session.participants.some(p => p.userId === therapistId)
+    );
   }
 
-  async getTherapistAnalytics(therapistId: string): Promise<TherapistAnalytics> {
+  async getTherapistAnalytics(
+    therapistId: string
+  ): Promise<TherapistAnalytics> {
     const patients = await this.getTherapistPatients(therapistId);
     const sessions = await this.getTherapistSessions(therapistId);
 
@@ -450,7 +495,9 @@ class CollaborationService {
     };
   }
 
-  async getTherapistNotifications(therapistId: string): Promise<TherapistNotification[]> {
+  async getTherapistNotifications(
+    therapistId: string
+  ): Promise<TherapistNotification[]> {
     return [
       {
         id: 'notif1',
@@ -511,7 +558,9 @@ class CollaborationService {
     return session;
   }
 
-  async startRemoteSupportSession(sessionId: string): Promise<RemoteSupportSession> {
+  async startRemoteSupportSession(
+    sessionId: string
+  ): Promise<RemoteSupportSession> {
     // In a real app, this would update the session status
     console.log('Remote support session started:', sessionId);
     return {
@@ -555,7 +604,10 @@ class CollaborationService {
   }
 
   // Event Management
-  addEventListener(listenerId: string, callback: (event: CollaborationEvent) => void): void {
+  addEventListener(
+    listenerId: string,
+    callback: (event: CollaborationEvent) => void
+  ): void {
     this.eventListeners.set(listenerId, callback);
   }
 
@@ -574,7 +626,9 @@ class CollaborationService {
   }
 
   // Helper Methods
-  private getDefaultPermissions(role: CollaborationParticipant['role']): CollaborationPermissions {
+  private getDefaultPermissions(
+    role: CollaborationParticipant['role']
+  ): CollaborationPermissions {
     switch (role) {
       case 'therapist':
         return {

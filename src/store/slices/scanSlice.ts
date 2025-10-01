@@ -18,21 +18,21 @@ const scanSlice = createSlice({
   name: 'scan',
   initialState,
   reducers: {
-    startScanning: (state) => {
+    startScanning: state => {
       state.isScanning = true;
       state.currentRow = 0;
       state.currentColumn = 0;
       state.currentItem = 0;
       state.highlightedButton = undefined;
     },
-    stopScanning: (state) => {
+    stopScanning: state => {
       state.isScanning = false;
       state.highlightedButton = undefined;
     },
-    pauseScanning: (state) => {
+    pauseScanning: state => {
       state.isScanning = false;
     },
-    resumeScanning: (state) => {
+    resumeScanning: state => {
       state.isScanning = true;
     },
     setScanMode: (state, action: PayloadAction<'row-column' | 'item'>) => {
@@ -54,36 +54,39 @@ const scanSlice = createSlice({
     setCurrentItem: (state, action: PayloadAction<number>) => {
       state.currentItem = action.payload;
     },
-    setHighlightedButton: (state, action: PayloadAction<string | undefined>) => {
+    setHighlightedButton: (
+      state,
+      action: PayloadAction<string | undefined>
+    ) => {
       state.highlightedButton = action.payload;
     },
-    nextRow: (state) => {
+    nextRow: state => {
       state.currentRow += 1;
       state.currentColumn = 0;
     },
-    nextColumn: (state) => {
+    nextColumn: state => {
       state.currentColumn += 1;
     },
-    nextItem: (state) => {
+    nextItem: state => {
       state.currentItem += 1;
     },
-    previousRow: (state) => {
+    previousRow: state => {
       if (state.currentRow > 0) {
         state.currentRow -= 1;
         state.currentColumn = 0;
       }
     },
-    previousColumn: (state) => {
+    previousColumn: state => {
       if (state.currentColumn > 0) {
         state.currentColumn -= 1;
       }
     },
-    previousItem: (state) => {
+    previousItem: state => {
       if (state.currentItem > 0) {
         state.currentItem -= 1;
       }
     },
-    resetScanPosition: (state) => {
+    resetScanPosition: state => {
       state.currentRow = 0;
       state.currentColumn = 0;
       state.currentItem = 0;

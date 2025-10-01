@@ -21,7 +21,12 @@ export interface ParentalConsent {
   id: string;
   userId: string;
   parentEmail: string;
-  consentType: 'data_collection' | 'data_sharing' | 'analytics' | 'cloud_sync' | 'collaboration';
+  consentType:
+    | 'data_collection'
+    | 'data_sharing'
+    | 'analytics'
+    | 'cloud_sync'
+    | 'collaboration';
   granted: boolean;
   grantedAt?: Date;
   expiresAt?: Date;
@@ -45,7 +50,11 @@ export interface AuditLog {
 export interface SecurityViolation {
   id: string;
   userId: string;
-  type: 'unauthorized_access' | 'data_breach' | 'privacy_violation' | 'compliance_issue';
+  type:
+    | 'unauthorized_access'
+    | 'data_breach'
+    | 'privacy_violation'
+    | 'compliance_issue';
   severity: 'low' | 'medium' | 'high' | 'critical';
   description: string;
   timestamp: Date;
@@ -133,7 +142,7 @@ class SecurityService {
       if (!this.encryptionKey) {
         throw new Error('Encryption key not initialized');
       }
-      
+
       // Simple XOR encryption for demonstration
       // In production, use proper encryption libraries
       const encrypted = Buffer.from(data).toString('base64');
@@ -149,7 +158,7 @@ class SecurityService {
       if (!this.encryptionKey) {
         throw new Error('Encryption key not initialized');
       }
-      
+
       // Simple XOR decryption for demonstration
       // In production, use proper decryption libraries
       const decrypted = Buffer.from(encryptedData, 'base64').toString();
@@ -164,18 +173,19 @@ class SecurityService {
   async verifyCOPPACompliance(): Promise<COPPACompliance> {
     try {
       const userId = this.currentUser?.id || 'unknown';
-      
+
       // Check if user is under 13
       const isUnder13 = await this.isUserUnder13(userId);
-      
+
       if (isUnder13) {
         // Verify parental consent
         const parentalConsent = await this.getParentalConsent(userId);
-        const hasValidConsent = parentalConsent.some(consent => 
-          consent.granted && 
-          (!consent.expiresAt || consent.expiresAt > new Date())
+        const hasValidConsent = parentalConsent.some(
+          consent =>
+            consent.granted &&
+            (!consent.expiresAt || consent.expiresAt > new Date())
         );
-        
+
         if (!hasValidConsent) {
           await this.logSecurityViolation({
             userId,
@@ -187,7 +197,7 @@ class SecurityService {
           });
         }
       }
-      
+
       const compliance: COPPACompliance = {
         userId,
         ageVerified: true,
@@ -199,7 +209,7 @@ class SecurityService {
         lastAudit: new Date(),
         complianceScore: await this.calculateComplianceScore(userId),
       };
-      
+
       return compliance;
     } catch (error) {
       console.error('Error verifying COPPA compliance:', error);
@@ -234,15 +244,19 @@ class SecurityService {
         granted: false,
         ipAddress: '127.0.0.1', // In production, get real IP
         userAgent: 'Ausmo AAC App',
-        signature: await this.generateConsentSignature(userId, parentEmail, consentType),
+        signature: await this.generateConsentSignature(
+          userId,
+          parentEmail,
+          consentType
+        ),
       };
-      
+
       // Store consent request
       await this.storeParentalConsent(consent);
-      
+
       // Send email to parent (in production)
       await this.sendParentalConsentEmail(consent);
-      
+
       console.log('Parental consent requested:', consent.id);
       return consent;
     } catch (error) {
@@ -261,25 +275,25 @@ class SecurityService {
       if (!consent) {
         throw new Error('Consent not found');
       }
-      
+
       // Verify signature
       const expectedSignature = await this.generateConsentSignature(
         consent.userId,
         parentEmail,
         consent.consentType
       );
-      
+
       if (signature !== expectedSignature) {
         throw new Error('Invalid signature');
       }
-      
+
       // Grant consent
       consent.granted = true;
       consent.grantedAt = new Date();
       consent.expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000); // 1 year
-      
+
       await this.updateParentalConsent(consent);
-      
+
       console.log('Parental consent granted:', consentId);
     } catch (error) {
       console.error('Error granting parental consent:', error);
@@ -289,7 +303,9 @@ class SecurityService {
 
   async getParentalConsent(userId: string): Promise<ParentalConsent[]> {
     try {
-      const consentData = await AsyncStorage.getItem(`parental_consent_${userId}`);
+      const consentData = await AsyncStorage.getItem(
+        `parental_consent_${userId}`
+      );
       return consentData ? JSON.parse(consentData) : [];
     } catch (error) {
       console.error('Error getting parental consent:', error);
@@ -298,11 +314,13 @@ class SecurityService {
   }
 
   // Security Settings Management
-  async updateSecuritySettings(settings: Partial<SecuritySettings>): Promise<void> {
+  async updateSecuritySettings(
+    settings: Partial<SecuritySettings>
+  ): Promise<void> {
     try {
       this.securitySettings = { ...this.securitySettings, ...settings };
       await this.saveSecuritySettings();
-      
+
       // Log security setting changes
       await this.logAuditEvent({
         action: 'update_security_settings',
@@ -310,7 +328,7 @@ class SecurityService {
         success: true,
         details: { changedSettings: Object.keys(settings) },
       });
-      
+
       console.log('Security settings updated');
     } catch (error) {
       console.error('Error updating security settings:', error);
@@ -323,10 +341,15 @@ class SecurityService {
   }
 
   // Audit Logging
-  async logAuditEvent(event: Omit<AuditLog, 'id' | 'userId' | 'timestamp' | 'ipAddress' | 'userAgent'>): Promise<void> {
+  async logAuditEvent(
+    event: Omit<
+      AuditLog,
+      'id' | 'userId' | 'timestamp' | 'ipAddress' | 'userAgent'
+    >
+  ): Promise<void> {
     try {
       if (!this.securitySettings.auditLogging) return;
-      
+
       const auditLog: AuditLog = {
         id: `audit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         userId: this.currentUser?.id || 'unknown',
@@ -335,17 +358,17 @@ class SecurityService {
         userAgent: 'Ausmo AAC App',
         ...event,
       };
-      
+
       this.auditLogs.push(auditLog);
-      
+
       // Keep only last 1000 audit logs
       if (this.auditLogs.length > 1000) {
         this.auditLogs = this.auditLogs.slice(-1000);
       }
-      
+
       // Store audit log
       await this.storeAuditLog(auditLog);
-      
+
       console.log('Audit event logged:', auditLog.action);
     } catch (error) {
       console.error('Error logging audit event:', error);
@@ -359,19 +382,19 @@ class SecurityService {
   ): Promise<AuditLog[]> {
     try {
       let logs = [...this.auditLogs];
-      
+
       if (userId) {
         logs = logs.filter(log => log.userId === userId);
       }
-      
+
       if (startDate) {
         logs = logs.filter(log => log.timestamp >= startDate);
       }
-      
+
       if (endDate) {
         logs = logs.filter(log => log.timestamp <= endDate);
       }
-      
+
       return logs.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
     } catch (error) {
       console.error('Error getting audit logs:', error);
@@ -380,28 +403,33 @@ class SecurityService {
   }
 
   // Security Violation Management
-  async logSecurityViolation(violation: Omit<SecurityViolation, 'id'>): Promise<void> {
+  async logSecurityViolation(
+    violation: Omit<SecurityViolation, 'id'>
+  ): Promise<void> {
     try {
       const securityViolation: SecurityViolation = {
         id: `violation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         ...violation,
       };
-      
+
       this.securityViolations.push(securityViolation);
-      
+
       // Log audit event
       await this.logAuditEvent({
         action: 'security_violation',
         resource: 'security',
         success: false,
-        details: { violationType: violation.type, severity: violation.severity },
+        details: {
+          violationType: violation.type,
+          severity: violation.severity,
+        },
       });
-      
+
       // Handle critical violations
       if (violation.severity === 'critical') {
         await this.handleCriticalViolation(securityViolation);
       }
-      
+
       console.log('Security violation logged:', securityViolation.type);
     } catch (error) {
       console.error('Error logging security violation:', error);
@@ -414,16 +442,22 @@ class SecurityService {
   ): Promise<SecurityViolation[]> {
     try {
       let violations = [...this.securityViolations];
-      
+
       if (userId) {
-        violations = violations.filter(violation => violation.userId === userId);
+        violations = violations.filter(
+          violation => violation.userId === userId
+        );
       }
-      
+
       if (severity) {
-        violations = violations.filter(violation => violation.severity === severity);
+        violations = violations.filter(
+          violation => violation.severity === severity
+        );
       }
-      
-      return violations.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+
+      return violations.sort(
+        (a, b) => b.timestamp.getTime() - a.timestamp.getTime()
+      );
     } catch (error) {
       console.error('Error getting security violations:', error);
       return [];
@@ -441,10 +475,13 @@ class SecurityService {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      
+
       // Store anonymized data
-      await AsyncStorage.setItem(`user_${userId}`, JSON.stringify(anonymizedData));
-      
+      await AsyncStorage.setItem(
+        `user_${userId}`,
+        JSON.stringify(anonymizedData)
+      );
+
       // Log anonymization
       await this.logAuditEvent({
         action: 'anonymize_user_data',
@@ -452,7 +489,7 @@ class SecurityService {
         success: true,
         details: { originalUserId: userId },
       });
-      
+
       console.log('User data anonymized:', userId);
     } catch (error) {
       console.error('Error anonymizing user data:', error);
@@ -465,9 +502,9 @@ class SecurityService {
       // Delete all user data
       const keys = await AsyncStorage.getAllKeys();
       const userKeys = keys.filter(key => key.includes(userId));
-      
+
       await AsyncStorage.multiRemove(userKeys);
-      
+
       // Log deletion
       await this.logAuditEvent({
         action: 'delete_user_data',
@@ -475,7 +512,7 @@ class SecurityService {
         success: true,
         details: { deletedKeys: userKeys },
       });
-      
+
       console.log('User data deleted:', userId);
     } catch (error) {
       console.error('Error deleting user data:', error);
@@ -500,14 +537,14 @@ class SecurityService {
     try {
       const consent = await this.getParentalConsent(userId);
       const violations = await this.getSecurityViolations(userId);
-      
+
       let score = 100;
-      
+
       // Deduct points for missing consent
       if (consent.length === 0) {
         score -= 30;
       }
-      
+
       // Deduct points for violations
       violations.forEach(violation => {
         switch (violation.severity) {
@@ -525,7 +562,7 @@ class SecurityService {
             break;
         }
       });
-      
+
       return Math.max(0, score);
     } catch (error) {
       console.error('Error calculating compliance score:', error);
@@ -533,16 +570,18 @@ class SecurityService {
     }
   }
 
-  private async handleCriticalViolation(violation: SecurityViolation): Promise<void> {
+  private async handleCriticalViolation(
+    violation: SecurityViolation
+  ): Promise<void> {
     try {
       // In production, this would:
       // 1. Send alerts to administrators
       // 2. Temporarily disable user account
       // 3. Log to external security system
       // 4. Notify compliance team
-      
+
       console.log('CRITICAL SECURITY VIOLATION:', violation);
-      
+
       // For now, just log the violation
       await this.logAuditEvent({
         action: 'critical_violation_handled',
@@ -559,7 +598,10 @@ class SecurityService {
     try {
       const settings = await AsyncStorage.getItem('security_settings');
       if (settings) {
-        this.securitySettings = { ...this.securitySettings, ...JSON.parse(settings) };
+        this.securitySettings = {
+          ...this.securitySettings,
+          ...JSON.parse(settings),
+        };
       }
     } catch (error) {
       console.error('Error loading security settings:', error);
@@ -568,7 +610,10 @@ class SecurityService {
 
   private async saveSecuritySettings(): Promise<void> {
     try {
-      await AsyncStorage.setItem('security_settings', JSON.stringify(this.securitySettings));
+      await AsyncStorage.setItem(
+        'security_settings',
+        JSON.stringify(this.securitySettings)
+      );
     } catch (error) {
       console.error('Error saving security settings:', error);
     }
@@ -603,11 +648,15 @@ class SecurityService {
     }
   }
 
-  private async getParentalConsentById(consentId: string): Promise<ParentalConsent | null> {
+  private async getParentalConsentById(
+    consentId: string
+  ): Promise<ParentalConsent | null> {
     try {
       const keys = await AsyncStorage.getAllKeys();
-      const consentKeys = keys.filter(key => key.startsWith('parental_consent_'));
-      
+      const consentKeys = keys.filter(key =>
+        key.startsWith('parental_consent_')
+      );
+
       for (const key of consentKeys) {
         const consentData = await AsyncStorage.getItem(key);
         if (consentData) {
@@ -616,7 +665,7 @@ class SecurityService {
           if (found) return found;
         }
       }
-      
+
       return null;
     } catch (error) {
       console.error('Error getting parental consent by ID:', error);
@@ -624,7 +673,9 @@ class SecurityService {
     }
   }
 
-  private async sendParentalConsentEmail(consent: ParentalConsent): Promise<void> {
+  private async sendParentalConsentEmail(
+    consent: ParentalConsent
+  ): Promise<void> {
     try {
       // In production, this would send an actual email
       console.log('Parental consent email sent to:', consent.parentEmail);
@@ -638,12 +689,12 @@ class SecurityService {
       const logs = await AsyncStorage.getItem('audit_logs');
       const existingLogs = logs ? JSON.parse(logs) : [];
       existingLogs.push(auditLog);
-      
+
       // Keep only last 1000 logs
       if (existingLogs.length > 1000) {
         existingLogs.splice(0, existingLogs.length - 1000);
       }
-      
+
       await AsyncStorage.setItem('audit_logs', JSON.stringify(existingLogs));
     } catch (error) {
       console.error('Error storing audit log:', error);

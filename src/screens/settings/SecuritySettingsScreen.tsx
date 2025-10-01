@@ -13,6 +13,8 @@ import {
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
+import { useVisualSettings } from '../../contexts/VisualSettingsContext';
+import { getThemeColors } from '../../utils/themeUtils';
 
 import { RootState } from '../../store';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../../constants';
@@ -24,6 +26,10 @@ import SecurityService, {
 } from '../../services/securityService';
 
 export default function SecuritySettingsScreen() {
+  const { theme } = useVisualSettings();
+  const safeTheme = theme || 'light'; // Ensure theme is never undefined
+  const themeColors = getThemeColors(safeTheme);
+  const styles = getStyles(themeColors);
   const currentUser = useSelector((state: RootState) => state.user.currentUser);
   const [securityService] = useState(() => SecurityService.getInstance());
   const [settings, setSettings] = useState<SecuritySettings | null>(null);
@@ -154,7 +160,7 @@ export default function SecuritySettingsScreen() {
         {/* Encryption */}
         <View style={styles.settingItem}>
           <View style={styles.settingInfo}>
-            <Ionicons name="lock-closed" size={24} color={COLORS.PRIMARY} />
+            <Ionicons name="lock-closed" size={24} color={themeColors.primary} />
             <View style={styles.settingDetails}>
               <Text style={styles.settingName}>Data Encryption</Text>
               <Text style={styles.settingDescription}>
@@ -165,15 +171,15 @@ export default function SecuritySettingsScreen() {
           <Switch
             value={settings.encryptionEnabled}
             onValueChange={(value) => handleSettingChange('encryptionEnabled', value)}
-            trackColor={{ false: COLORS.BORDER, true: COLORS.PRIMARY }}
-            thumbColor={settings.encryptionEnabled ? COLORS.SURFACE : COLORS.TEXT_SECONDARY}
+            trackColor={{ false: COLORS.BORDER, true: themeColors.primary }}
+            thumbColor={settings.encryptionEnabled ? COLORS.SURFACE : themeColors.textSecondary}
           />
         </View>
 
         {/* Biometric Authentication */}
         <View style={styles.settingItem}>
           <View style={styles.settingInfo}>
-            <Ionicons name="finger-print" size={24} color={COLORS.PRIMARY} />
+            <Ionicons name="finger-print" size={24} color={themeColors.primary} />
             <View style={styles.settingDetails}>
               <Text style={styles.settingName}>Biometric Authentication</Text>
               <Text style={styles.settingDescription}>
@@ -184,15 +190,15 @@ export default function SecuritySettingsScreen() {
           <Switch
             value={settings.biometricAuth}
             onValueChange={(value) => handleSettingChange('biometricAuth', value)}
-            trackColor={{ false: COLORS.BORDER, true: COLORS.PRIMARY }}
-            thumbColor={settings.biometricAuth ? COLORS.SURFACE : COLORS.TEXT_SECONDARY}
+            trackColor={{ false: COLORS.BORDER, true: themeColors.primary }}
+            thumbColor={settings.biometricAuth ? COLORS.SURFACE : themeColors.textSecondary}
           />
         </View>
 
         {/* Session Timeout */}
         <View style={styles.settingItem}>
           <View style={styles.settingInfo}>
-            <Ionicons name="time" size={24} color={COLORS.PRIMARY} />
+            <Ionicons name="time" size={24} color={themeColors.primary} />
             <View style={styles.settingDetails}>
               <Text style={styles.settingName}>Session Timeout</Text>
               <Text style={styles.settingDescription}>
@@ -222,7 +228,7 @@ export default function SecuritySettingsScreen() {
         {/* Audit Logging */}
         <View style={styles.settingItem}>
           <View style={styles.settingInfo}>
-            <Ionicons name="document-text" size={24} color={COLORS.PRIMARY} />
+            <Ionicons name="document-text" size={24} color={themeColors.primary} />
             <View style={styles.settingDetails}>
               <Text style={styles.settingName}>Audit Logging</Text>
               <Text style={styles.settingDescription}>
@@ -233,15 +239,15 @@ export default function SecuritySettingsScreen() {
           <Switch
             value={settings.auditLogging}
             onValueChange={(value) => handleSettingChange('auditLogging', value)}
-            trackColor={{ false: COLORS.BORDER, true: COLORS.PRIMARY }}
-            thumbColor={settings.auditLogging ? COLORS.SURFACE : COLORS.TEXT_SECONDARY}
+            trackColor={{ false: COLORS.BORDER, true: themeColors.primary }}
+            thumbColor={settings.auditLogging ? COLORS.SURFACE : themeColors.textSecondary}
           />
         </View>
 
         {/* Parental Controls */}
         <View style={styles.settingItem}>
           <View style={styles.settingInfo}>
-            <Ionicons name="shield-checkmark" size={24} color={COLORS.PRIMARY} />
+            <Ionicons name="shield-checkmark" size={24} color={themeColors.primary} />
             <View style={styles.settingDetails}>
               <Text style={styles.settingName}>Parental Controls</Text>
               <Text style={styles.settingDescription}>
@@ -252,15 +258,15 @@ export default function SecuritySettingsScreen() {
           <Switch
             value={settings.parentalControls}
             onValueChange={(value) => handleSettingChange('parentalControls', value)}
-            trackColor={{ false: COLORS.BORDER, true: COLORS.PRIMARY }}
-            thumbColor={settings.parentalControls ? COLORS.SURFACE : COLORS.TEXT_SECONDARY}
+            trackColor={{ false: COLORS.BORDER, true: themeColors.primary }}
+            thumbColor={settings.parentalControls ? COLORS.SURFACE : themeColors.textSecondary}
           />
         </View>
 
         {/* Data Sharing */}
         <View style={styles.settingItem}>
           <View style={styles.settingInfo}>
-            <Ionicons name="share" size={24} color={COLORS.PRIMARY} />
+            <Ionicons name="share" size={24} color={themeColors.primary} />
             <View style={styles.settingDetails}>
               <Text style={styles.settingName}>Data Sharing</Text>
               <Text style={styles.settingDescription}>
@@ -271,15 +277,15 @@ export default function SecuritySettingsScreen() {
           <Switch
             value={settings.dataSharing}
             onValueChange={(value) => handleSettingChange('dataSharing', value)}
-            trackColor={{ false: COLORS.BORDER, true: COLORS.PRIMARY }}
-            thumbColor={settings.dataSharing ? COLORS.SURFACE : COLORS.TEXT_SECONDARY}
+            trackColor={{ false: COLORS.BORDER, true: themeColors.primary }}
+            thumbColor={settings.dataSharing ? COLORS.SURFACE : themeColors.textSecondary}
           />
         </View>
 
         {/* Analytics Opt-in */}
         <View style={styles.settingItem}>
           <View style={styles.settingInfo}>
-            <Ionicons name="analytics" size={24} color={COLORS.PRIMARY} />
+            <Ionicons name="analytics" size={24} color={themeColors.primary} />
             <View style={styles.settingDetails}>
               <Text style={styles.settingName}>Analytics</Text>
               <Text style={styles.settingDescription}>
@@ -290,8 +296,8 @@ export default function SecuritySettingsScreen() {
           <Switch
             value={settings.analyticsOptIn}
             onValueChange={(value) => handleSettingChange('analyticsOptIn', value)}
-            trackColor={{ false: COLORS.BORDER, true: COLORS.PRIMARY }}
-            thumbColor={settings.analyticsOptIn ? COLORS.SURFACE : COLORS.TEXT_SECONDARY}
+            trackColor={{ false: COLORS.BORDER, true: themeColors.primary }}
+            thumbColor={settings.analyticsOptIn ? COLORS.SURFACE : themeColors.textSecondary}
           />
         </View>
 
@@ -328,14 +334,14 @@ export default function SecuritySettingsScreen() {
             style={styles.headerButton}
             onPress={handleRequestParentalConsent}
           >
-            <Ionicons name="add-circle" size={20} color={COLORS.PRIMARY} />
+            <Ionicons name="add-circle" size={20} color={themeColors.primary} />
             <Text style={styles.headerButtonText}>Request Consent</Text>
           </TouchableOpacity>
         </View>
 
         {parentalConsent.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="shield-checkmark" size={48} color={COLORS.TEXT_SECONDARY} />
+            <Ionicons name="shield-checkmark" size={48} color={themeColors.textSecondary} />
             <Text style={styles.emptyStateTitle}>No Parental Consent</Text>
             <Text style={styles.emptyStateText}>
               Request parental consent to enable data collection and sharing features.
@@ -390,7 +396,7 @@ export default function SecuritySettingsScreen() {
         
         {auditLogs.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="document-text" size={48} color={COLORS.TEXT_SECONDARY} />
+            <Ionicons name="document-text" size={48} color={themeColors.textSecondary} />
             <Text style={styles.emptyStateTitle}>No Audit Logs</Text>
             <Text style={styles.emptyStateText}>
               Audit logs will appear here when security events occur.
@@ -500,7 +506,7 @@ export default function SecuritySettingsScreen() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.PRIMARY} />
+        <ActivityIndicator size="large" color={themeColors.primary} />
         <Text style={styles.loadingText}>Loading security data...</Text>
       </View>
     );
@@ -527,7 +533,7 @@ export default function SecuritySettingsScreen() {
             <Ionicons 
               name={tab.icon as any} 
               size={20} 
-              color={selectedTab === tab.key ? COLORS.SURFACE : COLORS.TEXT_SECONDARY} 
+              color={selectedTab === tab.key ? COLORS.SURFACE : themeColors.textSecondary} 
             />
             <Text style={[
               styles.tabButtonText,
@@ -551,20 +557,20 @@ export default function SecuritySettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (themeColors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: themeColors.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: themeColors.background,
   },
   loadingText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
     marginTop: SPACING.MD,
   },
   tabContainer: {
@@ -583,11 +589,11 @@ const styles = StyleSheet.create({
     gap: SPACING.XS,
   },
   tabButtonSelected: {
-    backgroundColor: COLORS.PRIMARY,
+    backgroundColor: themeColors.primary,
   },
   tabButtonText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
   },
   tabButtonTextSelected: {
@@ -608,7 +614,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginBottom: SPACING.MD,
   },
   headerButton: {
@@ -619,12 +625,12 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.SURFACE,
     borderRadius: BORDER_RADIUS.SM,
     borderWidth: 1,
-    borderColor: COLORS.PRIMARY,
+    borderColor: themeColors.primary,
     gap: SPACING.XS,
   },
   headerButtonText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.PRIMARY,
+    color: themeColors.primary,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
   },
   settingsContainer: {
@@ -637,7 +643,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.SURFACE,
     borderRadius: BORDER_RADIUS.MD,
     padding: SPACING.MD,
-    shadowColor: COLORS.TEXT_PRIMARY,
+    shadowColor: themeColors.text_PRIMARY,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -655,24 +661,24 @@ const styles = StyleSheet.create({
   settingName: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginBottom: SPACING.XS,
   },
   settingDescription: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
   settingButton: {
     paddingHorizontal: SPACING.SM,
     paddingVertical: SPACING.XS,
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: themeColors.background,
     borderRadius: BORDER_RADIUS.SM,
     borderWidth: 1,
-    borderColor: COLORS.PRIMARY,
+    borderColor: themeColors.primary,
   },
   settingButtonText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.PRIMARY,
+    color: themeColors.primary,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.MEDIUM,
   },
   dataManagementSection: {
@@ -709,18 +715,18 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: TYPOGRAPHY.FONT_SIZES.LARGE,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginTop: SPACING.MD,
     marginBottom: SPACING.SM,
   },
   emptyStateText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
     textAlign: 'center',
     marginBottom: SPACING.LG,
   },
   emptyStateButton: {
-    backgroundColor: COLORS.PRIMARY,
+    backgroundColor: themeColors.primary,
     paddingHorizontal: SPACING.LG,
     paddingVertical: SPACING.MD,
     borderRadius: BORDER_RADIUS.MD,
@@ -734,7 +740,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.SURFACE,
     borderRadius: BORDER_RADIUS.MD,
     padding: SPACING.MD,
-    shadowColor: COLORS.TEXT_PRIMARY,
+    shadowColor: themeColors.text_PRIMARY,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -752,12 +758,12 @@ const styles = StyleSheet.create({
   consentType: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
     marginBottom: SPACING.XS,
   },
   consentEmail: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
   consentStatus: {
     paddingHorizontal: SPACING.SM,
@@ -774,7 +780,7 @@ const styles = StyleSheet.create({
   },
   consentDetailText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
   auditContainer: {
     gap: SPACING.MD,
@@ -783,7 +789,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.SURFACE,
     borderRadius: BORDER_RADIUS.MD,
     padding: SPACING.MD,
-    shadowColor: COLORS.TEXT_PRIMARY,
+    shadowColor: themeColors.text_PRIMARY,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -798,7 +804,7 @@ const styles = StyleSheet.create({
   auditAction: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
   },
   auditStatus: {
     paddingHorizontal: SPACING.SM,
@@ -812,17 +818,17 @@ const styles = StyleSheet.create({
   },
   auditResource: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
     marginBottom: SPACING.XS,
   },
   auditTimestamp: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
     marginBottom: SPACING.XS,
   },
   auditDetails: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
   violationsContainer: {
     gap: SPACING.MD,
@@ -831,7 +837,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.SURFACE,
     borderRadius: BORDER_RADIUS.MD,
     padding: SPACING.MD,
-    shadowColor: COLORS.TEXT_PRIMARY,
+    shadowColor: themeColors.text_PRIMARY,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -846,7 +852,7 @@ const styles = StyleSheet.create({
   violationType: {
     fontSize: TYPOGRAPHY.FONT_SIZES.MEDIUM,
     fontWeight: TYPOGRAPHY.FONT_WEIGHTS.BOLD,
-    color: COLORS.TEXT_PRIMARY,
+    color: themeColors.text_PRIMARY,
   },
   violationSeverity: {
     paddingHorizontal: SPACING.SM,
@@ -860,12 +866,12 @@ const styles = StyleSheet.create({
   },
   violationDescription: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
     marginBottom: SPACING.SM,
   },
   violationTimestamp: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
     marginBottom: SPACING.SM,
   },
   violationStatus: {
@@ -873,10 +879,10 @@ const styles = StyleSheet.create({
   },
   violationStatusText: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
   violationResolution: {
     fontSize: TYPOGRAPHY.FONT_SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: themeColors.textSecondary,
   },
 });
